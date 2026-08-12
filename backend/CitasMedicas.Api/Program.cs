@@ -1,4 +1,17 @@
+using CitasMedicas.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
+
+
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "No se ha encontrado la cadena de conexión 'DefaultConnection'.");
+
+builder.Services.AddDbContext<CitasMedicasDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
 
 // Add services to the container.
 
