@@ -6,6 +6,8 @@ using CitasMedicas.Infrastructure.Repositories;
 
 using CitasMedicas.Application.Mappings;
 
+using CitasMedicas.Application.Interfaces.Services;
+using CitasMedicas.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,12 +23,19 @@ builder.Services.AddDbContext<CitasMedicasDbContext>(options =>
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+
+
 // Add services to the container.
 
 builder.Services.AddAutoMapper(
     cfg => { },
     typeof(MappingProfile)
 );
+
+builder.Services.AddScoped<IPacienteService, PacienteService>();
+builder.Services.AddScoped<IMedicoService, MedicoService>();
+builder.Services.AddScoped<ICitaService, CitaService>();
+builder.Services.AddScoped<IDiagnosticoService, DiagnosticoService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
