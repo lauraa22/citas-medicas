@@ -10,6 +10,11 @@ namespace CitasMedicas.Application.Interfaces.Repositories;
 public interface IUnitOfWork
 {
     /// <summary>
+    /// Obtiene el repositorio de usuarios.
+    /// </summary>
+    IGenericRepository<Usuario> Usuarios { get; }
+
+    /// <summary>
     /// Obtiene el repositorio específico de pacientes.
     /// </summary>
     IPacienteRepository Pacientes { get; }
@@ -29,29 +34,11 @@ public interface IUnitOfWork
     /// </summary>
     IGenericRepository<Diagnostico> Diagnosticos { get; }
 
-    /// <summary>
-    /// Guarda en la base de datos todos los cambios pendientes
-    /// realizados a través de los repositorios.
-    /// </summary>
-    /// <returns>
-    /// Número de registros afectados por la operación.
-    /// </returns>
     Task<int> SaveChangesAsync();
 
-    /// <summary>
-    /// Inicia una nueva transacción en la base de datos.
-    /// </summary>
     Task BeginTransactionAsync();
 
-    /// <summary>
-    /// Confirma la transacción activa y persiste definitivamente
-    /// las operaciones realizadas dentro de ella.
-    /// </summary>
     Task CommitTransactionAsync();
 
-    /// <summary>
-    /// Revierte la transacción activa, deshaciendo las operaciones
-    /// realizadas desde el inicio de la transacción.
-    /// </summary>
     Task RollbackTransactionAsync();
 }

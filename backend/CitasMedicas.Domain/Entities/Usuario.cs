@@ -1,6 +1,6 @@
 namespace CitasMedicas.Domain.Entities;
 
-public abstract class Usuario
+public class Usuario
 {
     public int Id { get; set; }
 

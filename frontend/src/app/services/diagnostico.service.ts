@@ -1,37 +1,137 @@
-import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
+import {
+  computed,
+  inject,
+  Injectable,
+  signal,
+} from '@angular/core';
+
+import {
+  Observable,
+  tap,
+} from 'rxjs';
+
 import { Diagnostico } from '../models/diagnostico.model';
-import { DiagnosticoStore } from '../store/diagnostico.store';
+
+export interface DiagnosticoWrite {
+  valoracionEspecialista: string;
+  enfermedad: string;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class DiagnosticoService {
-  private readonly store = inject(DiagnosticoStore);
+  private readonly http =
+    inject(HttpClient);
 
-  readonly diagnosticos = this.store.items;
-  readonly total = this.store.total;
+  private readonly apiUrl =
+    'http://localhost:5134/api/diagnosticos';
 
-  getById(id: number) {
-    return this.store.getById(id);
+  private readonly _diagnosticos =
+    signal<Diagnostico[]>([]);
+
+  readonly diagnosticos =
+    this._diagnosticos.asReadonly();
+
+  readonly total = computed(
+    () =>
+      this._diagnosticos().length,
+  );
+
+  load(): void {
+    this.http
+      .get<Diagnostico[]>(
+        this.apiUrl,
+      )
+      .subscribe({
+        next: (diagnosticos) => {
+          this._diagnosticos.set(
+            diagnosticos,
+          );
+        },
+
+        error: (error) => {
+          console.error(
+            'Error cargando diagnósticos',
+            error,
+          );
+        },
+      });
   }
 
-  create(data: Omit<Diagnostico, 'id'>): Diagnostico {
-    const diagnostico = new Diagnostico(
-      this.store.nextId(),
-      data.valoracionEspecialista,
-      data.enfermedad,
+  getById(
+    id: number,
+  ): Observable<Diagnostico> {
+    return this.http.get<Diagnostico>(
+      `${this.apiUrl}/${id}`,
     );
-
-    this.store.create(diagnostico);
-
-    return diagnostico;
   }
 
-  update(diagnostico: Diagnostico): void {
-    this.store.update(diagnostico);
+  findById(
+    id: number,
+  ): Diagnostico | undefined {
+    return this._diagnosticos().find(
+      (diagnostico) =>
+        diagnostico.id === id,
+    );
   }
 
-  delete(id: number): void {
-    this.store.delete(id);
+  create(
+    data: DiagnosticoWrite,
+  ): Observable<Diagnostico> {
+    return this.http
+      .post<Diagnostico>(
+        this.apiUrl,
+        data,
+      )
+      .pipe(
+        tap((created) => {
+          this._diagnosticos.update(
+            (items) => [
+              ...items,
+              created,
+            ],
+          );
+        }),
+      );
+  }
+
+  update(
+    id: number,
+    data: DiagnosticoWrite,
+  ): Observable<void> {
+    return this.http
+      .put<void>(
+        `${this.apiUrl}/${id}`,
+        data,
+      )
+      .pipe(
+        tap(() => {
+          this.load();
+        }),
+      );
+  }
+
+  delete(
+    id: number,
+  ): Observable<void> {
+    return this.http
+      .delete<void>(
+        `${this.apiUrl}/${id}`,
+      )
+      .pipe(
+        tap(() => {
+          this._diagnosticos.update(
+            (items) =>
+              items.filter(
+                (diagnostico) =>
+                  diagnostico.id !==
+                  id,
+              ),
+          );
+        }),
+      );
   }
 }

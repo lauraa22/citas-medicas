@@ -1,53 +1,148 @@
-import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import {
+  computed,
+  inject,
+  Injectable,
+  signal,
+} from '@angular/core';
+import { Observable, tap } from 'rxjs';
+
 import { Cita } from '../models/cita.model';
-import { CitaStore } from '../store/cita.store';
+
+export interface CitaWrite {
+  fechaHora: string;
+  motivoCita: string;
+  pacienteId: number;
+  medicoId: number;
+  diagnosticoId: number | null;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class CitaService {
-  private readonly store = inject(CitaStore);
+  private readonly http = inject(HttpClient);
 
-  readonly citas = this.store.items;
-  readonly total = this.store.total;
+  private readonly apiUrl =
+    'http://localhost:5134/api/citas';
 
-  getById(id: number) {
-    return this.store.getById(id);
+  private readonly _citas =
+    signal<Cita[]>([]);
+
+  readonly citas =
+    this._citas.asReadonly();
+
+  readonly total = computed(
+    () => this._citas().length,
+  );
+
+  load(): void {
+    this.http
+      .get<Cita[]>(this.apiUrl)
+      .subscribe({
+        next: (citas) => {
+          this._citas.set(citas);
+        },
+
+        error: (error) => {
+          console.error(
+            'Error cargando citas',
+            error,
+          );
+        },
+      });
   }
 
-  create(data: Omit<Cita, 'id'>): Cita {
-    const cita = new Cita(
-      this.store.nextId(),
-      data.fechaHora,
-      data.motivoCita,
-      Number(data.pacienteId),
-      Number(data.medicoId),
-      data.diagnosticoId ? Number(data.diagnosticoId) : null,
+  getById(
+    id: number,
+  ): Observable<Cita> {
+    return this.http.get<Cita>(
+      `${this.apiUrl}/${id}`,
     );
-
-    this.store.create(cita);
-
-    return cita;
   }
 
-  update(cita: Cita): void {
-    this.store.update({
-      ...cita,
-      pacienteId: Number(cita.pacienteId),
-      medicoId: Number(cita.medicoId),
-      diagnosticoId: cita.diagnosticoId ? Number(cita.diagnosticoId) : null,
-    });
+  findById(
+    id: number,
+  ): Cita | undefined {
+    return this._citas().find(
+      (cita) => cita.id === id,
+    );
   }
 
-  delete(id: number): void {
-    this.store.delete(id);
+  create(
+    data: CitaWrite,
+  ): Observable<Cita> {
+    return this.http
+      .post<Cita>(
+        this.apiUrl,
+        data,
+      )
+      .pipe(
+        tap((created) => {
+          this._citas.update(
+            (items) => [
+              ...items,
+              created,
+            ],
+          );
+        }),
+      );
   }
 
-  byDoctor(medicoId: number | null): Cita[] {
-    if (!medicoId) {
-      return this.citas();
+  update(
+    id: number,
+    data: CitaWrite,
+  ): Observable<void> {
+    return this.http
+      .put<void>(
+        `${this.apiUrl}/${id}`,
+        data,
+      )
+      .pipe(
+        tap(() => {
+          this.load();
+        }),
+      );
+  }
+
+  delete(
+    id: number,
+  ): Observable<void> {
+    return this.http
+      .delete<void>(
+        `${this.apiUrl}/${id}`,
+      )
+      .pipe(
+        tap(() => {
+          this._citas.update(
+            (items) =>
+              items.filter(
+                (cita) =>
+                  cita.id !== id,
+              ),
+          );
+        }),
+      );
+  }
+
+  /**
+   * Único filtro de citas de la aplicación.
+   * Devuelve todas las citas o únicamente
+   * las correspondientes al médico indicado.
+   */
+  byDoctor(
+    medicoId: number | null,
+  ): Cita[] {
+    if (
+      medicoId === null ||
+      medicoId === 0
+    ) {
+      return this._citas();
     }
 
-    return this.citas().filter((cita) => cita.medicoId === medicoId);
+    return this._citas().filter(
+      (cita) =>
+        cita.medicoId === medicoId,
+    );
   }
 }

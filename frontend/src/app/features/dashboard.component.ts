@@ -1,4 +1,8 @@
-import { Component, inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+} from '@angular/core';
 
 import { UsuarioService } from '../services/usuario.service';
 import { PacienteService } from '../services/paciente.service';
@@ -73,10 +77,18 @@ import { DiagnosticoService } from '../services/diagnostico.service';
     `,
   ],
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   u = inject(UsuarioService);
   p = inject(PacienteService);
   m = inject(MedicoService);
   c = inject(CitaService);
   d = inject(DiagnosticoService);
+
+  ngOnInit(): void {
+    this.u.load();
+    this.p.load();
+    this.m.load();
+    this.c.load();
+    this.d.load();
+  }
 }

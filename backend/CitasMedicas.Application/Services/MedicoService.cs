@@ -97,7 +97,14 @@ public class MedicoService : IMedicoService{
                 return false;
             }
 
+            var claveActual = medico.Clave;
+
             _mapper.Map(dto, medico);
+
+            if (string.IsNullOrWhiteSpace(dto.Clave))
+            {
+                medico.Clave = claveActual;
+            }
 
             medico.Pacientes.Clear();
 

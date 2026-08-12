@@ -11,7 +11,7 @@ public class PacienteUpdateDto
 
     public string Usuario { get; set; } = string.Empty;
 
-    public string Clave { get; set; } = string.Empty;
+    public string? Clave { get; set; } = string.Empty;
 
     public string NSS { get; set; } = string.Empty;
 

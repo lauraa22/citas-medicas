@@ -3,18 +3,23 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
+  OnInit,
   computed,
   inject,
-  signal
+  signal,
 } from '@angular/core';
 
 import {
   FormBuilder,
   ReactiveFormsModule,
-  Validators
+  Validators,
 } from '@angular/forms';
 
-import { CitaService } from '../services/cita.service';
+import {
+  CitaService,
+  CitaWrite,
+} from '../services/cita.service';
+
 import { PacienteService } from '../services/paciente.service';
 import { MedicoService } from '../services/medico.service';
 import { DiagnosticoService } from '../services/diagnostico.service';
@@ -29,12 +34,14 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
 
   standalone: true,
 
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  schemas: [
+    CUSTOM_ELEMENTS_SCHEMA,
+  ],
 
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    DeleteConfirmComponent
+    DeleteConfirmComponent,
   ],
 
   template: `
@@ -55,21 +62,27 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
       Filtrar por médico
 
       <select
-        data-cy="appointment-filter"
+        data-cy="appointment-doctor-filter"
         [value]="doctorFilter() ?? ''"
-        (change)="setFilter($any($event.target).value)"
+        (change)="
+          changeDoctorFilter(
+            $any($event.target).value
+          )
+        "
       >
         <option value="">
-          Todos
+          Todos los médicos
         </option>
 
         @for (
-          m of medicos.medicos();
-          track m.id
+          medico of medicos.medicos();
+          track medico.id
         ) {
-          <option [value]="m.id">
-            {{ m.nombre }}
-            {{ m.apellidos }}
+          <option
+            [value]="medico.id"
+          >
+            {{ medico.nombre }}
+            {{ medico.apellidos }}
           </option>
         }
       </select>
@@ -78,7 +91,11 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
     @if (formVisible()) {
       <section class="panel">
         <h2>
-          {{ editingId() ? 'Editar' : 'Nueva' }}
+          {{
+            editingId()
+              ? 'Editar'
+              : 'Nueva'
+          }}
           cita
         </h2>
 
@@ -87,7 +104,6 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
           (ngSubmit)="save()"
         >
           <div class="grid">
-
             <label>
               Fecha y hora
 
@@ -99,6 +115,15 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
             </label>
 
             <label>
+              Motivo
+
+              <input
+                data-cy="appointment-reason"
+                formControlName="motivoCita"
+              />
+            </label>
+
+            <label>
               Paciente
 
               <select
@@ -106,16 +131,18 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
                 formControlName="pacienteId"
               >
                 <option value="">
-                  Selecciona
+                  Selecciona paciente
                 </option>
 
                 @for (
-                  p of pacientes.pacientes();
-                  track p.id
+                  paciente of pacientes.pacientes();
+                  track paciente.id
                 ) {
-                  <option [value]="p.id">
-                    {{ p.nombre }}
-                    {{ p.apellidos }}
+                  <option
+                    [value]="paciente.id"
+                  >
+                    {{ paciente.nombre }}
+                    {{ paciente.apellidos }}
                   </option>
                 }
               </select>
@@ -129,25 +156,28 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
                 formControlName="medicoId"
               >
                 <option value="">
-                  Selecciona
+                  Selecciona médico
                 </option>
 
                 @for (
-                  m of medicos.medicos();
-                  track m.id
+                  medico of medicos.medicos();
+                  track medico.id
                 ) {
-                  <option [value]="m.id">
-                    {{ m.nombre }}
-                    {{ m.apellidos }}
+                  <option
+                    [value]="medico.id"
+                  >
+                    {{ medico.nombre }}
+                    {{ medico.apellidos }}
                   </option>
                 }
               </select>
             </label>
 
             <label>
-              Diagnóstico (opcional)
+              Diagnóstico
 
               <select
+                data-cy="appointment-diagnosis"
                 formControlName="diagnosticoId"
               >
                 <option value="">
@@ -155,27 +185,17 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
                 </option>
 
                 @for (
-                  d of diagnosticos.diagnosticos();
-                  track d.id
+                  diagnostico of diagnosticos.diagnosticos();
+                  track diagnostico.id
                 ) {
-                  <option [value]="d.id">
-                    {{ d.enfermedad }}
+                  <option
+                    [value]="diagnostico.id"
+                  >
+                    {{ diagnostico.enfermedad }}
                   </option>
                 }
               </select>
             </label>
-
-            <label class="full">
-              Motivo
-
-              <textarea
-                data-cy="appointment-reason"
-                rows="2"
-                formControlName="motivoCita"
-              >
-              </textarea>
-            </label>
-
           </div>
 
           <div class="actions">
@@ -213,99 +233,143 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
 
       <tbody>
         @for (
-          x of filtered();
-          track x.id
+          cita of filtered();
+          track cita.id
         ) {
-          <tr data-cy="appointment-row">
-
+          <tr
+            data-cy="appointment-row"
+          >
             <td>
-              {{ x.id }}
+              {{ cita.id }}
             </td>
 
             <td>
-              {{ x.fechaHora | date: 'dd/MM/yyyy HH:mm' }}
+              {{
+                cita.fechaHora
+                  | date:
+                    'dd/MM/yyyy HH:mm'
+              }}
             </td>
 
             <td>
-              {{ patientName(x.pacienteId) }}
+              {{
+                patientName(
+                  cita.pacienteId
+                )
+              }}
             </td>
 
             <td>
-              {{ doctorName(x.medicoId) }}
+              {{
+                doctorName(
+                  cita.medicoId
+                )
+              }}
             </td>
 
             <td>
-              {{ x.motivoCita }}
+              {{ cita.motivoCita }}
             </td>
 
             <td>
-              {{ diagnosisName(x.diagnosticoId) }}
+              {{
+                diagnosisName(
+                  cita.diagnosticoId
+                )
+              }}
             </td>
 
             <td>
               <button
                 class="link"
-                (click)="detail.set(x)"
+                (click)="detail.set(cita)"
               >
                 Ver
               </button>
 
               <button
                 class="link"
-                (click)="edit(x)"
+                (click)="edit(cita)"
               >
                 Editar
               </button>
 
               <button
                 class="link danger-text"
-                (click)="pendingDelete.set(x)"
+                (click)="
+                  pendingDelete.set(cita)
+                "
               >
                 Eliminar
               </button>
             </td>
-
           </tr>
         }
       </tbody>
     </table>
 
-    @if (detail(); as x) {
-      <section class="panel detail">
-
+    @if (detail(); as cita) {
+      <section
+        class="panel detail"
+      >
         <h2>
-          Detalle cita #{{ x.id }}
+          Detalle cita #{{ cita.id }}
         </h2>
 
         <cita-resumen
-          [attr.fecha]="x.fechaHora"
-          [attr.texto]="x.motivoCita"
+          [attr.fecha]="
+            cita.fechaHora
+          "
+          [attr.texto]="
+            cita.motivoCita
+          "
         >
         </cita-resumen>
 
         <p>
           <b>Fecha:</b>
-          {{ x.fechaHora | date: 'dd/MM/yyyy HH:mm' }}
+
+          {{
+            cita.fechaHora
+              | date:
+                'dd/MM/yyyy HH:mm'
+          }}
         </p>
 
         <p>
           <b>Paciente:</b>
-          {{ patientName(x.pacienteId) }}
+
+          {{
+            patientName(
+              cita.pacienteId
+            )
+          }}
         </p>
 
         <p>
           <b>Médico:</b>
-          {{ doctorName(x.medicoId) }}
+
+          {{
+            doctorName(
+              cita.medicoId
+            )
+          }}
         </p>
 
         <p>
           <b>Motivo:</b>
-          {{ x.motivoCita }}
+
+          {{ cita.motivoCita }}
         </p>
 
         <p>
           <b>Diagnóstico:</b>
-          {{ diagnosisName(x.diagnosticoId) }}
+
+          {{
+            diagnosisName(
+              cita.diagnosticoId
+            )
+          }}
         </p>
 
         <button
@@ -314,39 +378,47 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
         >
           Cerrar
         </button>
-
       </section>
     }
 
     <app-delete-confirm
       [open]="!!pendingDelete()"
       label="esta cita"
-      (cancel)="pendingDelete.set(null)"
+      (cancel)="
+        pendingDelete.set(null)
+      "
       (confirm)="confirmDelete()"
     />
-  `
+  `,
 })
-export class CitasComponent {
+export class CitasComponent
+  implements OnInit
+{
+  service =
+    inject(CitaService);
 
-  service = inject(CitaService);
+  pacientes =
+    inject(PacienteService);
 
-  pacientes = inject(PacienteService);
+  medicos =
+    inject(MedicoService);
 
-  medicos = inject(MedicoService);
+  diagnosticos =
+    inject(DiagnosticoService);
 
-  diagnosticos = inject(DiagnosticoService);
+  notify =
+    inject(NotificationService);
 
-  notify = inject(NotificationService);
-
-  fb = inject(FormBuilder);
+  fb =
+    inject(FormBuilder);
 
   doctorFilter =
     signal<number | null>(null);
 
   filtered = computed(() =>
     this.service.byDoctor(
-      this.doctorFilter()
-    )
+      this.doctorFilter(),
+    ),
   );
 
   formVisible =
@@ -361,127 +433,202 @@ export class CitasComponent {
   pendingDelete =
     signal<Cita | null>(null);
 
-  form = this.fb.group({
-    fechaHora: [
-      '',
-      Validators.required
-    ],
+  form =
+    this.fb.nonNullable.group({
+      fechaHora: [
+        '',
+        Validators.required,
+      ],
 
-    motivoCita: [
-      '',
-      Validators.required
-    ],
+      motivoCita: [
+        '',
+        Validators.required,
+      ],
 
-    pacienteId: [
-      '',
-      Validators.required
-    ],
+      pacienteId: [
+        '',
+        Validators.required,
+      ],
 
-    medicoId: [
-      '',
-      Validators.required
-    ],
+      medicoId: [
+        '',
+        Validators.required,
+      ],
 
-    diagnosticoId: ['']
-  });
+      diagnosticoId: [''],
+    });
 
-  setFilter(v: string) {
-    this.doctorFilter.set(
-      v ? Number(v) : null
-    );
+  ngOnInit(): void {
+    this.service.load();
+
+    this.pacientes.load();
+
+    this.medicos.load();
+
+    this.diagnosticos.load();
   }
 
-  newItem() {
+  newItem(): void {
     this.editingId.set(null);
 
-    this.form.reset({
-      fechaHora: '',
-      motivoCita: '',
-      pacienteId: '',
-      medicoId: '',
-      diagnosticoId: ''
-    });
+    this.form.reset();
 
     this.formVisible.set(true);
   }
 
-  edit(x: Cita) {
-    this.editingId.set(x.id);
+  edit(
+    cita: Cita,
+  ): void {
+    this.editingId.set(
+      cita.id,
+    );
 
     this.form.setValue({
-      fechaHora: x.fechaHora,
+      fechaHora:
+        this.toDateTimeInput(
+          cita.fechaHora,
+        ),
 
-      motivoCita: x.motivoCita,
+      motivoCita:
+        cita.motivoCita,
 
       pacienteId:
-        String(x.pacienteId),
+        String(cita.pacienteId),
 
       medicoId:
-        String(x.medicoId),
+        String(cita.medicoId),
 
       diagnosticoId:
-        x.diagnosticoId
-          ? String(x.diagnosticoId)
-          : ''
+        cita.diagnosticoId ===
+        null
+          ? ''
+          : String(
+              cita.diagnosticoId,
+            ),
     });
 
     this.formVisible.set(true);
   }
 
-  closeForm() {
-    this.formVisible.set(false);
-  }
-
-  save() {
+  save(): void {
     if (this.form.invalid) {
       return;
     }
 
-    const v =
+    const values =
       this.form.getRawValue();
+
+    const data: CitaWrite = {
+      fechaHora:
+        values.fechaHora,
+
+      motivoCita:
+        values.motivoCita,
+
+      pacienteId:
+        Number(
+          values.pacienteId,
+        ),
+
+      medicoId:
+        Number(
+          values.medicoId,
+        ),
+
+      diagnosticoId:
+        values.diagnosticoId
+          ? Number(
+              values.diagnosticoId,
+            )
+          : null,
+    };
 
     const id =
       this.editingId();
 
-    const cita =
-      new Cita(
-        id ?? 0,
-        v.fechaHora!,
-        v.motivoCita!,
-        Number(v.pacienteId),
-        Number(v.medicoId),
-        v.diagnosticoId
-          ? Number(v.diagnosticoId)
-          : null
-      );
+    if (id !== null) {
+      this.service
+        .update(id, data)
+        .subscribe({
+          next: () => {
+            this.notify.success(
+              'Cita actualizada correctamente',
+            );
 
-    if (id) {
-      this.service.update(cita);
-    } else {
-      this.service.create(
-        cita as any
-      );
+            this.closeForm();
+          },
+
+          error: (error) => {
+            console.error(
+              'Error actualizando cita',
+              error,
+            );
+
+            this.notify.error(
+              'Error al actualizar la cita',
+            );
+          },
+        });
+
+      return;
     }
 
-    this.notify.success(
-      'Cita guardada correctamente'
-    );
+    this.service
+      .create(data)
+      .subscribe({
+        next: () => {
+          this.notify.success(
+            'Cita creada correctamente',
+          );
 
-    this.closeForm();
+          this.closeForm();
+        },
+
+        error: (error) => {
+          console.error(
+            'Error creando cita',
+            error,
+          );
+
+          this.notify.error(
+            'Error al crear la cita',
+          );
+        },
+      });
   }
 
-  patientName(id: number) {
+  closeForm(): void {
+    this.formVisible.set(false);
+
+    this.editingId.set(null);
+  }
+
+  changeDoctorFilter(
+    value: string,
+  ): void {
+    this.doctorFilter.set(
+      value
+        ? Number(value)
+        : null,
+    );
+  }
+
+  patientName(
+    id: number,
+  ): string {
     const paciente =
-      this.pacientes.getById(id);
+      this.pacientes.findById(id);
 
     return paciente
       ? `${paciente.nombre} ${paciente.apellidos}`
       : '-';
   }
 
-  doctorName(id: number) {
+  doctorName(
+    id: number,
+  ): string {
     const medico =
-      this.medicos.getById(id);
+      this.medicos.findById(id);
 
     return medico
       ? `${medico.nombre} ${medico.apellidos}`
@@ -489,31 +636,95 @@ export class CitasComponent {
   }
 
   diagnosisName(
-    id: number | null
-  ) {
-    return id
-      ? (
-          this.diagnosticos
-            .getById(id)
-            ?.enfermedad ?? '-'
-        )
+    id: number | null,
+  ): string {
+    if (id === null) {
+      return 'Sin diagnóstico';
+    }
+
+    const diagnostico =
+      this.diagnosticos.findById(
+        id,
+      );
+
+    return diagnostico
+      ? diagnostico.enfermedad
       : 'Sin diagnóstico';
   }
 
-  confirmDelete() {
+  confirmDelete(): void {
     const cita =
       this.pendingDelete();
 
-    if (cita) {
-      this.service.delete(
-        cita.id
-      );
-
-      this.notify.success(
-        'Cita eliminada'
-      );
-
-      this.pendingDelete.set(null);
+    if (!cita) {
+      return;
     }
+
+    this.service
+      .delete(cita.id)
+      .subscribe({
+        next: () => {
+          this.notify.success(
+            'Cita eliminada',
+          );
+
+          this.pendingDelete.set(
+            null,
+          );
+
+          if (
+            this.detail()?.id ===
+            cita.id
+          ) {
+            this.detail.set(null);
+          }
+        },
+
+        error: (error) => {
+          console.error(
+            'Error eliminando cita',
+            error,
+          );
+
+          this.notify.error(
+            'No se ha podido eliminar la cita',
+          );
+        },
+      });
+  }
+
+  private toDateTimeInput(
+    value: string | Date,
+  ): string {
+    const date =
+      new Date(value);
+
+    const year =
+      date.getFullYear();
+
+    const month =
+      String(
+        date.getMonth() + 1,
+      ).padStart(2, '0');
+
+    const day =
+      String(
+        date.getDate(),
+      ).padStart(2, '0');
+
+    const hours =
+      String(
+        date.getHours(),
+      ).padStart(2, '0');
+
+    const minutes =
+      String(
+        date.getMinutes(),
+      ).padStart(2, '0');
+
+    return (
+      `${year}-${month}-${day}` +
+      `T${hours}:${minutes}`
+    );
   }
 }

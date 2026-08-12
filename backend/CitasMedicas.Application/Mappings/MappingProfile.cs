@@ -17,6 +17,18 @@ public class MappingProfile : Profile
                 destination => destination.Usuario,
                 options => options.MapFrom(source => source.NombreUsuario));
 
+        CreateMap<UsuarioCreateDto, Usuario>()
+            .ForMember(
+                destination => destination.NombreUsuario,
+                options => options.MapFrom(
+                    source => source.Usuario));
+
+        CreateMap<UsuarioUpdateDto, Usuario>()
+            .ForMember(
+                destination => destination.NombreUsuario,
+                options => options.MapFrom(
+                    source => source.Usuario));
+                    
         CreateMap<Paciente, PacienteDto>()
             .ForMember(
                 destination => destination.Usuario,

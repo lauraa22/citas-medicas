@@ -1,15 +1,15 @@
 namespace CitasMedicas.Application.DTOs.Usuarios;
 
 /// <summary>
-/// Representa los datos de un usuario devueltos por la aplicación.
+/// Representa los datos necesarios para crear un usuario.
 /// </summary>
-public class UsuarioDto
+public class UsuarioCreateDto
 {
-    public int Id { get; set; }
-
     public string Nombre { get; set; } = string.Empty;
 
     public string Apellidos { get; set; } = string.Empty;
 
     public string Usuario { get; set; } = string.Empty;
+
+    public string Clave { get; set; } = string.Empty;
 }

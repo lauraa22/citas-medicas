@@ -1,91 +1,196 @@
-import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import {
+  computed,
+  inject,
+  Injectable,
+  signal,
+} from '@angular/core';
+import {
+  map,
+  Observable,
+  tap,
+} from 'rxjs';
+
 import { Paciente } from '../models/paciente.model';
-import { PacienteStore } from '../store/paciente.store';
-import { MedicoStore } from '../store/medico.store';
+
+export interface PacienteWrite {
+  nombre: string;
+  apellidos: string;
+  usuario: string;
+  clave: string;
+  nss: string;
+  numTarjeta: string;
+  telefono: string;
+  direccion: string;
+  medicoIds: number[];
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class PacienteService {
-  private readonly store = inject(PacienteStore);
-  private readonly medicoStore = inject(MedicoStore);
+  private readonly http = inject(HttpClient);
 
-  readonly pacientes = this.store.items;
-  readonly total = this.store.total;
+  private readonly apiUrl =
+    'http://localhost:5134/api/pacientes';
 
-  getById(id: number) {
-    return this.store.getById(id);
+  private readonly _pacientes =
+    signal<Paciente[]>([]);
+
+  readonly pacientes =
+    this._pacientes.asReadonly();
+
+  readonly total = computed(
+    () => this._pacientes().length,
+  );
+
+  load(): void {
+    this.http
+      .get<Paciente[]>(this.apiUrl)
+      .pipe(
+        map((pacientes) =>
+          pacientes.map((paciente) =>
+            this.normalize(paciente),
+          ),
+        ),
+      )
+      .subscribe({
+        next: (pacientes) => {
+          this._pacientes.set(pacientes);
+        },
+        error: (error) => {
+          console.error(
+            'Error cargando pacientes',
+            error,
+          );
+        },
+      });
   }
 
-  create(data: Omit<Paciente, 'id'>): Paciente {
-    const paciente = new Paciente(
-      this.store.nextId(),
-      data.nombre,
-      data.apellidos,
-      data.usuario,
-      data.clave,
-      data.nss,
-      data.numTarjeta,
-      data.telefono,
-      data.direccion,
-      data.medicoIds ?? [],
+  getById(
+    id: number,
+  ): Observable<Paciente> {
+    return this.http
+      .get<Paciente>(
+        `${this.apiUrl}/${id}`,
+      )
+      .pipe(
+        map((paciente) =>
+          this.normalize(paciente),
+        ),
+      );
+  }
+
+  findById(
+    id: number,
+  ): Paciente | undefined {
+    return this._pacientes().find(
+      (paciente) =>
+        paciente.id === id,
     );
-
-    this.store.create(paciente);
-    this.syncRelations(paciente);
-
-    return paciente;
   }
 
-  update(paciente: Paciente): void {
-    this.store.update(paciente);
-    this.syncRelations(paciente);
+  create(
+    data: PacienteWrite,
+  ): Observable<Paciente> {
+    return this.http
+      .post<Paciente>(
+        this.apiUrl,
+        data,
+      )
+      .pipe(
+        map((paciente) =>
+          this.normalize(
+            paciente,
+            data.clave,
+          ),
+        ),
+        tap((created) => {
+          this._pacientes.update(
+            (items) => [
+              ...items,
+              created,
+            ],
+          );
+        }),
+      );
   }
 
-  delete(id: number): void {
-    this.store.delete(id);
+  update(
+    id: number,
+    data: PacienteWrite,
+  ): Observable<void> {
+    return this.http
+      .put<void>(
+        `${this.apiUrl}/${id}`,
+        data,
+      )
+      .pipe(
+        tap(() => {
+          this.load();
+        }),
+      );
+  }
 
-    for (const medico of this.medicoStore.items()) {
-      if (medico.pacienteIds.includes(id)) {
-        this.medicoStore.update({
-          ...medico,
-          pacienteIds: medico.pacienteIds.filter((pacienteId) => pacienteId !== id),
-        });
-      }
+  delete(
+    id: number,
+  ): Observable<void> {
+    return this.http
+      .delete<void>(
+        `${this.apiUrl}/${id}`,
+      )
+      .pipe(
+        tap(() => {
+          this._pacientes.update(
+            (items) =>
+              items.filter(
+                (paciente) =>
+                  paciente.id !== id,
+              ),
+          );
+        }),
+      );
+  }
+
+  search(
+    text: string,
+  ): Paciente[] {
+    const value =
+      text.trim().toLowerCase();
+
+    if (!value) {
+      return this._pacientes();
     }
-  }
 
-  search(text: string): Paciente[] {
-    const termino = text.trim().toLowerCase();
-
-    if (!termino) {
-      return this.pacientes();
-    }
-
-    return this.pacientes().filter((paciente) =>
-      `${paciente.nombre} ${paciente.apellidos} ${paciente.nss}`.toLowerCase().includes(termino),
+    return this._pacientes().filter(
+      (paciente) =>
+        paciente.nombre
+          .toLowerCase()
+          .includes(value) ||
+        paciente.apellidos
+          .toLowerCase()
+          .includes(value) ||
+        paciente.nss
+          .toLowerCase()
+          .includes(value),
     );
   }
 
-  private syncRelations(paciente: Paciente): void {
-    for (const medico of this.medicoStore.items()) {
-      const debeEstarRelacionado = paciente.medicoIds.includes(medico.id);
-
-      const yaEstaRelacionado = medico.pacienteIds.includes(paciente.id);
-
-      if (debeEstarRelacionado && !yaEstaRelacionado) {
-        this.medicoStore.update({
-          ...medico,
-          pacienteIds: [...medico.pacienteIds, paciente.id],
-        });
-      }
-
-      if (!debeEstarRelacionado && yaEstaRelacionado) {
-        this.medicoStore.update({
-          ...medico,
-          pacienteIds: medico.pacienteIds.filter((id) => id !== paciente.id),
-        });
-      }
-    }
+  private normalize(
+    paciente: Paciente,
+    clave = '',
+  ): Paciente {
+    return new Paciente(
+      paciente.id,
+      paciente.nombre,
+      paciente.apellidos,
+      paciente.usuario,
+      paciente.clave ?? clave,
+      paciente.nss,
+      paciente.numTarjeta,
+      paciente.telefono,
+      paciente.direccion,
+      paciente.medicoIds ?? [],
+    );
   }
 }

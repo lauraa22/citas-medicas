@@ -13,6 +13,12 @@ public class PacientesController : ControllerBase
 {
     private readonly IPacienteService _pacienteService;
 
+    /// <summary>
+    /// Inicializa una nueva instancia del controlador de pacientes.
+    /// </summary>
+    /// <param name="pacienteService">
+    /// Servicio encargado de gestionar las operaciones relacionadas con los pacientes.
+    /// </param>
     public PacientesController(IPacienteService pacienteService)
     {
         _pacienteService = pacienteService;

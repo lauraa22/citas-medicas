@@ -3,18 +3,24 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
+  OnInit,
   inject,
-  signal
+  signal,
 } from '@angular/core';
 
 import {
   FormBuilder,
   ReactiveFormsModule,
-  Validators
+  Validators,
 } from '@angular/forms';
 
-import { MedicoService } from '../services/medico.service';
+import {
+  MedicoService,
+  MedicoWrite,
+} from '../services/medico.service';
+
 import { PacienteService } from '../services/paciente.service';
+
 import { NotificationService } from '../services/notification.service';
 
 import { Medico } from '../models/medico.model';
@@ -26,12 +32,14 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
 
   standalone: true,
 
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  schemas: [
+    CUSTOM_ELEMENTS_SCHEMA,
+  ],
 
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    DeleteConfirmComponent
+    DeleteConfirmComponent,
   ],
 
   template: `
@@ -51,7 +59,12 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
     @if (formVisible()) {
       <section class="panel">
         <h2>
-          {{ editingId() ? 'Editar' : 'Nuevo' }} médico
+          {{
+            editingId()
+              ? 'Editar'
+              : 'Nuevo'
+          }}
+          médico
         </h2>
 
         <form
@@ -61,6 +74,7 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
           <div class="grid">
             <label>
               Nombre
+
               <input
                 data-cy="doctor-name"
                 formControlName="nombre"
@@ -69,6 +83,7 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
 
             <label>
               Apellidos
+
               <input
                 formControlName="apellidos"
               />
@@ -76,6 +91,7 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
 
             <label>
               Usuario
+
               <input
                 formControlName="usuario"
               />
@@ -83,6 +99,7 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
 
             <label>
               Clave
+
               <input
                 type="password"
                 formControlName="clave"
@@ -91,6 +108,7 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
 
             <label>
               Nº colegiado
+
               <input
                 data-cy="doctor-license"
                 formControlName="numColegiado"
@@ -110,11 +128,16 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
               <label class="check">
                 <input
                   type="checkbox"
-                  [checked]="selectedPatients().includes(p.id)"
+                  [checked]="
+                    selectedPatients()
+                      .includes(p.id)
+                  "
                   (change)="
                     togglePatient(
                       p.id,
-                      $any($event.target).checked
+                      $any(
+                        $event.target
+                      ).checked
                     )
                   "
                 />
@@ -196,7 +219,9 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
 
               <button
                 class="link danger-text"
-                (click)="pendingDelete.set(x)"
+                (click)="
+                  pendingDelete.set(x)
+                "
               >
                 Eliminar
               </button>
@@ -207,16 +232,22 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
     </table>
 
     @if (detail(); as x) {
-      <section class="panel detail">
+      <section
+        class="panel detail"
+      >
         <h2>
           Detalle médico #{{ x.id }}
         </h2>
 
         <medico-resumen
           [attr.nombre]="
-            x.nombre + ' ' + x.apellidos
+            x.nombre +
+            ' ' +
+            x.apellidos
           "
-          [attr.colegiado]="x.numColegiado"
+          [attr.colegiado]="
+            x.numColegiado
+          "
         >
         </medico-resumen>
 
@@ -248,28 +279,39 @@ import { DeleteConfirmComponent } from '../shared/delete-confirm.component';
     <app-delete-confirm
       [open]="!!pendingDelete()"
       [label]="
-        pendingDelete()?.nombre || ''
+        pendingDelete()?.nombre ||
+        ''
       "
-      (cancel)="pendingDelete.set(null)"
+      (cancel)="
+        pendingDelete.set(null)
+      "
       (confirm)="confirmDelete()"
     />
-  `
+  `,
 })
-export class MedicosComponent {
+export class MedicosComponent
+  implements OnInit
+{
+  service =
+    inject(MedicoService);
 
-  service = inject(MedicoService);
+  pacientes =
+    inject(PacienteService);
 
-  pacientes = inject(PacienteService);
+  notify =
+    inject(NotificationService);
 
-  notify = inject(NotificationService);
+  fb =
+    inject(FormBuilder);
 
-  fb = inject(FormBuilder);
+  formVisible =
+    signal(false);
 
-  formVisible = signal(false);
+  editingId =
+    signal<number | null>(null);
 
-  editingId = signal<number | null>(null);
-
-  detail = signal<Medico | null>(null);
+  detail =
+    signal<Medico | null>(null);
 
   pendingDelete =
     signal<Medico | null>(null);
@@ -277,34 +319,39 @@ export class MedicosComponent {
   selectedPatients =
     signal<number[]>([]);
 
-  form = this.fb.nonNullable.group({
-    nombre: [
-      '',
-      Validators.required
-    ],
+  form =
+    this.fb.nonNullable.group({
+      nombre: [
+        '',
+        Validators.required,
+      ],
 
-    apellidos: [
-      '',
-      Validators.required
-    ],
+      apellidos: [
+        '',
+        Validators.required,
+      ],
 
-    usuario: [
-      '',
-      Validators.required
-    ],
+      usuario: [
+        '',
+        Validators.required,
+      ],
 
-    clave: [
-      '',
-      Validators.required
-    ],
+      clave: [
+        ''
+      ],
 
-    numColegiado: [
-      '',
-      Validators.required
-    ]
-  });
+      numColegiado: [
+        '',
+        Validators.required,
+      ],
+    });
 
-  newItem() {
+  ngOnInit(): void {
+    this.service.load();
+    this.pacientes.load();
+  }
+
+  newItem(): void {
     this.editingId.set(null);
 
     this.selectedPatients.set([]);
@@ -314,19 +361,35 @@ export class MedicosComponent {
     this.formVisible.set(true);
   }
 
-  edit(x: Medico) {
-    this.editingId.set(x.id);
+  edit(
+    medico: Medico,
+  ): void {
+    this.editingId.set(
+      medico.id,
+    );
 
     this.selectedPatients.set([
-      ...x.pacienteIds
+      ...medico.pacienteIds,
     ]);
 
     this.form.setValue({
-      nombre: x.nombre,
-      apellidos: x.apellidos,
-      usuario: x.usuario,
-      clave: x.clave,
-      numColegiado: x.numColegiado
+      nombre:
+        medico.nombre,
+
+      apellidos:
+        medico.apellidos,
+
+      usuario:
+        medico.usuario,
+
+      /*
+       * El backend no devuelve
+       * la clave del médico.
+       */
+      clave: '',
+
+      numColegiado:
+        medico.numColegiado,
     });
 
     this.formVisible.set(true);
@@ -334,93 +397,181 @@ export class MedicosComponent {
 
   togglePatient(
     id: number,
-    on: boolean
-  ) {
+    selected: boolean,
+  ): void {
     this.selectedPatients.update(
-      pacientes =>
-        on
-          ? [...pacientes, id]
-          : pacientes.filter(
-              pacienteId =>
-                pacienteId !== id
-            )
+      (patients) =>
+        selected
+          ? patients.includes(id)
+            ? patients
+            : [...patients, id]
+          : patients.filter(
+              (patientId) =>
+                patientId !== id,
+            ),
     );
   }
 
-  closeForm() {
+  closeForm(): void {
     this.formVisible.set(false);
+    this.editingId.set(null);
   }
 
-  save() {
-    if (this.form.invalid) {
-      return;
-    }
+  save(): void {
+  if (this.form.invalid) {
+    return;
+  }
 
-    const v =
-      this.form.getRawValue();
+  const values =
+    this.form.getRawValue();
 
-    const id =
-      this.editingId();
-
-    const medico =
-      new Medico(
-        id ?? 0,
-        v.nombre,
-        v.apellidos,
-        v.usuario,
-        v.clave,
-        v.numColegiado,
-        this.selectedPatients()
-      );
-
-    if (id) {
-      this.service.update(medico);
-    } else {
-      this.service.create(
-        medico as any
-      );
-    }
-
-    this.notify.success(
-      'Médico guardado correctamente'
+  // Al crear, la clave es obligatoria.
+  // Al editar, puede quedar vacía para conservar la actual.
+  if (
+    this.editingId() === null &&
+    !values.clave.trim()
+  ) {
+    this.notify.error(
+      'La clave es obligatoria al crear un médico',
     );
 
-    this.closeForm();
+    return;
+  }
+
+  const data: MedicoWrite = {
+    nombre:
+      values.nombre,
+
+    apellidos:
+      values.apellidos,
+
+    usuario:
+      values.usuario,
+
+    clave:
+      values.clave,
+
+    numColegiado:
+      values.numColegiado,
+
+    pacienteIds:
+      this.selectedPatients(),
+  };
+
+  const id =
+    this.editingId();
+
+  if (id !== null) {
+    this.service
+      .update(id, data)
+      .subscribe({
+        next: () => {
+          this.notify.success(
+            'Médico actualizado correctamente',
+          );
+
+          this.closeForm();
+        },
+
+        error: (error) => {
+          console.error(
+            'Error actualizando médico',
+            error,
+          );
+
+          this.notify.error(
+            'Error al actualizar el médico',
+          );
+        },
+      });
+
+    return;
+  }
+
+  this.service
+    .create(data)
+    .subscribe({
+      next: () => {
+        this.notify.success(
+          'Médico creado correctamente',
+        );
+
+        this.closeForm();
+      },
+
+      error: (error) => {
+        console.error(
+          'Error creando médico',
+          error,
+        );
+
+        this.notify.error(
+          'Error al crear el médico',
+        );
+      },
+    });
+
   }
 
   patientNames(
-    medico: Medico
-  ) {
+    medico: Medico,
+  ): string {
     return (
       medico.pacienteIds
-        .map(
-          id =>
-            this.pacientes.getById(id)
+        .map((id) =>
+          this.pacientes.findById(id),
         )
-        .filter(Boolean)
+        .filter(
+          (paciente) =>
+            paciente !== undefined,
+        )
         .map(
-          paciente =>
-            `${paciente!.nombre} ${paciente!.apellidos}`
+          (paciente) =>
+            `${paciente!.nombre} ${paciente!.apellidos}`,
         )
         .join(', ') ||
       'Sin asignar'
     );
   }
 
-  confirmDelete() {
+  confirmDelete(): void {
     const medico =
       this.pendingDelete();
 
-    if (medico) {
-      this.service.delete(
-        medico.id
-      );
-
-      this.notify.success(
-        'Médico eliminado'
-      );
-
-      this.pendingDelete.set(null);
+    if (!medico) {
+      return;
     }
+
+    this.service
+      .delete(medico.id)
+      .subscribe({
+        next: () => {
+          this.notify.success(
+            'Médico eliminado',
+          );
+
+          this.pendingDelete.set(
+            null,
+          );
+
+          if (
+            this.detail()?.id ===
+            medico.id
+          ) {
+            this.detail.set(null);
+          }
+        },
+
+        error: (error) => {
+          console.error(
+            'Error eliminando médico',
+            error,
+          );
+
+          this.notify.error(
+            'No se ha podido eliminar el médico',
+          );
+        },
+      });
   }
 }
