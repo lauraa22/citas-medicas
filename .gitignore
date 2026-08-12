@@ -1,0 +1,73 @@
+# =========================
+# FRONTEND / ANGULAR
+# =========================
+
+# Dependencies
+**/node_modules/
+
+# Angular generated files
+**/.angular/
+**/dist/
+**/tmp/
+**/out-tsc/
+**/bazel-out/
+
+# Testing
+**/coverage/
+**/cypress/screenshots/
+**/cypress/videos/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+# =========================
+# BACKEND / .NET
+# =========================
+
+**/bin/
+**/obj/
+.vs/
+
+
+# =========================
+# IDEs and editors
+# =========================
+
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+
+.history/*
+
+
+# =========================
+# Miscellaneous
+# =========================
+
+**/.sass-cache/
+connect.lock
+libpeerconnection.log
+testem.log
+**/typings/
+
+
+# =========================
+# System files
+# =========================
+
+.DS_Store
+Thumbs.db
