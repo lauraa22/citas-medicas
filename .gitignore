@@ -22,7 +22,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-
 # =========================
 # BACKEND / .NET
 # =========================
@@ -30,7 +29,6 @@ yarn-error.log*
 **/bin/
 **/obj/
 .vs/
-
 
 # =========================
 # IDEs and editors
@@ -53,7 +51,6 @@ yarn-error.log*
 
 .history/*
 
-
 # =========================
 # Miscellaneous
 # =========================
@@ -63,7 +60,6 @@ connect.lock
 libpeerconnection.log
 testem.log
 **/typings/
-
 
 # =========================
 # System files

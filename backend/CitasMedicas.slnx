@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CitasMedicas.Api/CitasMedicas.Api.csproj" />
+  <Project Path="CitasMedicas.Application/CitasMedicas.Application.csproj" />
+  <Project Path="CitasMedicas.Domain/CitasMedicas.Domain.csproj" />
+  <Project Path="CitasMedicas.Infrastructure/CitasMedicas.Infrastructure.csproj" />
+</Solution>
