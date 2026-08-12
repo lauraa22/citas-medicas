@@ -1,6 +1,10 @@
 using CitasMedicas.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
+using CitasMedicas.Application.Interfaces.Repositories;
+using CitasMedicas.Infrastructure.Repositories;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -12,6 +16,7 @@ var connectionString =
 builder.Services.AddDbContext<CitasMedicasDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Add services to the container.
 
