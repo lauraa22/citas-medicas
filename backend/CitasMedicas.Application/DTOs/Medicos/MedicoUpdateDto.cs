@@ -1,5 +1,8 @@
 namespace CitasMedicas.Application.DTOs.Medicos;
 
+/// <summary>
+/// Representa los datos necesarios para actualizar un médico.
+/// </summary>
 public class MedicoUpdateDto
 {
     public string Nombre { get; set; } = string.Empty;

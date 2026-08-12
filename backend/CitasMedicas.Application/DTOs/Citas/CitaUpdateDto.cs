@@ -1,5 +1,8 @@
 namespace CitasMedicas.Application.DTOs.Citas;
 
+/// <summary>
+/// Representa los datos necesarios para actualizar una cita médica.
+/// </summary>
 public class CitaUpdateDto
 {
     public DateTime FechaHora { get; set; }

@@ -6,8 +6,10 @@ using CitasMedicas.Domain.Entities;
 
 namespace CitasMedicas.Application.Services;
 
-public class DiagnosticoService : IDiagnosticoService
-{
+/// <summary>
+/// Servicio encargado de la gestión de diagnósticos.
+/// </summary>
+public class DiagnosticoService : IDiagnosticoService{
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 

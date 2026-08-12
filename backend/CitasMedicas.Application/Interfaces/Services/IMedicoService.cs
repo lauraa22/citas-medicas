@@ -2,6 +2,9 @@ using CitasMedicas.Application.DTOs.Medicos;
 
 namespace CitasMedicas.Application.Interfaces.Services;
 
+/// <summary>
+/// Define las operaciones disponibles para la gestión de médicos.
+/// </summary>
 public interface IMedicoService
 {
     Task<IEnumerable<MedicoDto>> GetAllAsync();

@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CitasMedicas.Api.Controllers;
 
+/// <summary>
+/// Controlador para la gestión de pacientes.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class PacientesController : ControllerBase
@@ -15,6 +18,10 @@ public class PacientesController : ControllerBase
         _pacienteService = pacienteService;
     }
 
+    /// <summary>
+    /// Obtiene todos los pacientes.
+    /// </summary>
+    /// <returns>Listado de pacientes.</returns>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PacienteDto>>> GetAll()
     {
@@ -23,6 +30,11 @@ public class PacientesController : ControllerBase
         return Ok(pacientes);
     }
 
+    /// <summary>
+    /// Obtiene un paciente por su identificador.
+    /// </summary>
+    /// <param name="id">Identificador del paciente.</param>
+    /// <returns>Paciente encontrado.</returns>
     [HttpGet("{id:int}")]
     public async Task<ActionResult<PacienteDto>> GetById(int id)
     {
@@ -34,6 +46,11 @@ public class PacientesController : ControllerBase
         return Ok(paciente);
     }
 
+    /// <summary>
+    /// Crea un nuevo paciente.
+    /// </summary>
+    /// <param name="dto">Datos del paciente.</param>
+    /// <returns>Paciente creado.</returns>
     [HttpPost]
     public async Task<ActionResult<PacienteDto>> Create(
         PacienteCreateDto dto)
@@ -57,6 +74,11 @@ public class PacientesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Actualiza un paciente existente.
+    /// </summary>
+    /// <param name="id">Identificador del paciente.</param>
+    /// <param name="dto">Nuevos datos del paciente.</param>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(
         int id,
@@ -81,6 +103,10 @@ public class PacientesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Elimina un paciente.
+    /// </summary>
+    /// <param name="id">Identificador del paciente.</param>
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

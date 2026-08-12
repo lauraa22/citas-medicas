@@ -4,18 +4,33 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CitasMedicas.Api.Controllers;
 
+/// <summary>
+/// Controlador encargado de la gestión de citas médicas.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class CitasController : ControllerBase
 {
     private readonly ICitaService _citaService;
 
+    /// <summary>
+    /// Inicializa el controlador de citas.
+    /// </summary>
+    /// <param name="citaService">
+    /// Servicio encargado de la lógica de negocio de citas.
+    /// </param>
     public CitasController(ICitaService citaService)
     {
         _citaService = citaService;
     }
 
+    /// <summary>
+    /// Obtiene todas las citas registradas.
+    /// </summary>
+    /// <returns>Listado de citas.</returns>
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<CitaDto>),
+        StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<CitaDto>>> GetAll()
     {
         var citas =
@@ -24,7 +39,14 @@ public class CitasController : ControllerBase
         return Ok(citas);
     }
 
+    /// <summary>
+    /// Obtiene una cita por su identificador.
+    /// </summary>
+    /// <param name="id">Identificador de la cita.</param>
+    /// <returns>Cita solicitada.</returns>
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(CitaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CitaDto>> GetById(int id)
     {
         var cita =
@@ -36,7 +58,18 @@ public class CitasController : ControllerBase
         return Ok(cita);
     }
 
+    /// <summary>
+    /// Crea una nueva cita.
+    /// </summary>
+    /// <remarks>
+    /// La cita debe estar asociada a un paciente y un médico.
+    /// El diagnóstico es opcional en el momento de creación.
+    /// </remarks>
+    /// <param name="dto">Datos necesarios para crear la cita.</param>
+    /// <returns>Cita creada.</returns>
     [HttpPost]
+    [ProducesResponseType(typeof(CitaDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CitaDto>> Create(
         CitaCreateDto dto)
     {
@@ -59,7 +92,15 @@ public class CitasController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Actualiza una cita existente.
+    /// </summary>
+    /// <param name="id">Identificador de la cita.</param>
+    /// <param name="dto">Nuevos datos de la cita.</param>
     [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         int id,
         CitaUpdateDto dto)
@@ -83,7 +124,13 @@ public class CitasController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Elimina una cita.
+    /// </summary>
+    /// <param name="id">Identificador de la cita.</param>
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted =

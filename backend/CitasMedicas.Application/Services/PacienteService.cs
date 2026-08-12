@@ -6,8 +6,12 @@ using CitasMedicas.Domain.Entities;
 
 namespace CitasMedicas.Application.Services;
 
-public class PacienteService : IPacienteService
-{
+/// <summary>
+/// Servicio encargado de la lógica de negocio relacionada
+/// con los pacientes, incluyendo la gestión de sus relaciones
+/// con médicos y el control transaccional de las operaciones.
+/// </summary>
+public class PacienteService : IPacienteService {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 

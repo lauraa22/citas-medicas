@@ -4,18 +4,33 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CitasMedicas.Api.Controllers;
 
+/// <summary>
+/// Controlador encargado de la gestión de médicos.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class MedicosController : ControllerBase
 {
     private readonly IMedicoService _medicoService;
 
+    /// <summary>
+    /// Inicializa el controlador de médicos.
+    /// </summary>
+    /// <param name="medicoService">
+    /// Servicio encargado de la lógica de negocio de médicos.
+    /// </param>
     public MedicosController(IMedicoService medicoService)
     {
         _medicoService = medicoService;
     }
 
+    /// <summary>
+    /// Obtiene todos los médicos registrados.
+    /// </summary>
+    /// <returns>Listado de médicos.</returns>
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<MedicoDto>),
+        StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<MedicoDto>>> GetAll()
     {
         var medicos =
@@ -24,7 +39,14 @@ public class MedicosController : ControllerBase
         return Ok(medicos);
     }
 
+    /// <summary>
+    /// Obtiene un médico por su identificador.
+    /// </summary>
+    /// <param name="id">Identificador del médico.</param>
+    /// <returns>Médico solicitado.</returns>
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(MedicoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MedicoDto>> GetById(int id)
     {
         var medico =
@@ -36,7 +58,14 @@ public class MedicosController : ControllerBase
         return Ok(medico);
     }
 
+    /// <summary>
+    /// Crea un nuevo médico.
+    /// </summary>
+    /// <param name="dto">Datos necesarios para crear el médico.</param>
+    /// <returns>Médico creado.</returns>
     [HttpPost]
+    [ProducesResponseType(typeof(MedicoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<MedicoDto>> Create(
         MedicoCreateDto dto)
     {
@@ -59,7 +88,15 @@ public class MedicosController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Actualiza los datos de un médico.
+    /// </summary>
+    /// <param name="id">Identificador del médico.</param>
+    /// <param name="dto">Nuevos datos del médico.</param>
     [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         int id,
         MedicoUpdateDto dto)
@@ -83,7 +120,13 @@ public class MedicosController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Elimina un médico.
+    /// </summary>
+    /// <param name="id">Identificador del médico.</param>
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted =

@@ -6,8 +6,12 @@ using CitasMedicas.Domain.Entities;
 
 namespace CitasMedicas.Application.Services;
 
-public class CitaService : ICitaService
-{
+/// <summary>
+/// Servicio encargado de gestionar las citas médicas
+/// y validar la existencia del paciente, médico y diagnóstico
+/// asociados.
+/// </summary>
+public class CitaService : ICitaService{
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 

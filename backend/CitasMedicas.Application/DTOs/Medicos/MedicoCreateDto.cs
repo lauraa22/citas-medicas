@@ -1,5 +1,8 @@
 namespace CitasMedicas.Application.DTOs.Medicos;
 
+/// <summary>
+/// Representa los datos necesarios para crear un médico.
+/// </summary>
 public class MedicoCreateDto
 {
     public string Nombre { get; set; } = string.Empty;
@@ -12,5 +15,9 @@ public class MedicoCreateDto
 
     public string NumColegiado { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Identificadores de pacientes que se desean asociar.
+    /// Puede estar vacío.
+    /// </summary>
     public List<int> PacienteIds { get; set; } = [];
 }

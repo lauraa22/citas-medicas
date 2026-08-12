@@ -2,6 +2,9 @@ using CitasMedicas.Application.DTOs.Citas;
 
 namespace CitasMedicas.Application.Interfaces.Services;
 
+/// <summary>
+/// Define las operaciones disponibles para la gestión de citas médicas.
+/// </summary>
 public interface ICitaService
 {
     Task<IEnumerable<CitaDto>> GetAllAsync();
