@@ -1,5 +1,6 @@
-using CitasMedicas.Application.DTOs.Citas;
-using CitasMedicas.Application.Interfaces.Services;
+using CitasMedicas.Api.DTOs;
+using CitasMedicas.Api.Mappings;
+using CitasMedicas.Application.UseCases.Citas;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CitasMedicas.Api.Controllers;
@@ -11,130 +12,164 @@ namespace CitasMedicas.Api.Controllers;
 [Route("api/[controller]")]
 public class CitasController : ControllerBase
 {
-    private readonly ICitaService _citaService;
+    private readonly GetCitasUseCase _getCitasUseCase;
+    private readonly GetCitaUseCase _getCitaUseCase;
+    private readonly CreateCitaUseCase _createCitaUseCase;
+    private readonly UpdateCitaUseCase _updateCitaUseCase;
+    private readonly DeleteCitaUseCase _deleteCitaUseCase;
 
     /// <summary>
-    /// Inicializa el controlador de citas.
+    /// Inicializa una nueva instancia del controlador de citas.
     /// </summary>
-    /// <param name="citaService">
-    /// Servicio encargado de la lógica de negocio de citas.
+    /// <param name="getCitasUseCase">
+    /// Caso de uso para obtener todas las citas.
     /// </param>
-    public CitasController(ICitaService citaService)
+    /// <param name="getCitaUseCase">
+    /// Caso de uso para obtener una cita.
+    /// </param>
+    /// <param name="createCitaUseCase">
+    /// Caso de uso para crear una cita.
+    /// </param>
+    /// <param name="updateCitaUseCase">
+    /// Caso de uso para actualizar una cita.
+    /// </param>
+    /// <param name="deleteCitaUseCase">
+    /// Caso de uso para eliminar una cita.
+    /// </param>
+    public CitasController(
+        GetCitasUseCase getCitasUseCase,
+        GetCitaUseCase getCitaUseCase,
+        CreateCitaUseCase createCitaUseCase,
+        UpdateCitaUseCase updateCitaUseCase,
+        DeleteCitaUseCase deleteCitaUseCase)
     {
-        _citaService = citaService;
+        _getCitasUseCase = getCitasUseCase;
+        _getCitaUseCase = getCitaUseCase;
+        _createCitaUseCase = createCitaUseCase;
+        _updateCitaUseCase = updateCitaUseCase;
+        _deleteCitaUseCase = deleteCitaUseCase;
     }
 
     /// <summary>
     /// Obtiene todas las citas registradas.
     /// </summary>
-    /// <returns>Listado de citas.</returns>
+    /// <returns>
+    /// Listado de citas.
+    /// </returns>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<CitaDto>),
+    [ProducesResponseType(
+        typeof(IEnumerable<CitaDto>),
         StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<CitaDto>>> GetAll()
     {
         var citas =
-            await _citaService.GetAllAsync();
+            await _getCitasUseCase.ExecuteAsync();
 
-        return Ok(citas);
+        return Ok(
+            citas.Select(cita => cita.ToDto()));
     }
 
     /// <summary>
     /// Obtiene una cita por su identificador.
     /// </summary>
-    /// <param name="id">Identificador de la cita.</param>
-    /// <returns>Cita solicitada.</returns>
+    /// <param name="id">
+    /// Identificador de la cita.
+    /// </param>
+    /// <returns>
+    /// Cita solicitada.
+    /// </returns>
     [HttpGet("{id:int}")]
-    [ProducesResponseType(typeof(CitaDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(CitaDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CitaDto>> GetById(int id)
     {
         var cita =
-            await _citaService.GetByIdAsync(id);
+            await _getCitaUseCase.ExecuteAsync(id);
 
         if (cita is null)
             return NotFound();
 
-        return Ok(cita);
+        return Ok(cita.ToDto());
     }
 
     /// <summary>
-    /// Crea una nueva cita.
+    /// Crea una nueva cita médica.
     /// </summary>
-    /// <remarks>
-    /// La cita debe estar asociada a un paciente y un médico.
-    /// El diagnóstico es opcional en el momento de creación.
-    /// </remarks>
-    /// <param name="dto">Datos necesarios para crear la cita.</param>
-    /// <returns>Cita creada.</returns>
+    /// <param name="dto">
+    /// Datos de la cita.
+    /// </param>
+    /// <returns>
+    /// Cita creada.
+    /// </returns>
     [HttpPost]
-    [ProducesResponseType(typeof(CitaDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(CitaDto),
+        StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CitaDto>> Create(
-        CitaCreateDto dto)
+        CitaDto dto)
     {
-        try
-        {
-            var cita =
-                await _citaService.CreateAsync(dto);
+        var cita =
+            await _createCitaUseCase
+                .ExecuteAsync(dto.ToModel());
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = cita.Id },
-                cita);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new
-            {
-                message = ex.Message
-            });
-        }
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = cita.Id },
+            cita.ToDto());
     }
 
     /// <summary>
     /// Actualiza una cita existente.
     /// </summary>
-    /// <param name="id">Identificador de la cita.</param>
-    /// <param name="dto">Nuevos datos de la cita.</param>
+    /// <param name="id">
+    /// Identificador de la cita.
+    /// </param>
+    /// <param name="dto">
+    /// Nuevos datos de la cita.
+    /// </param>
     [HttpPut("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        StatusCodes.Status204NoContent)]
+    [ProducesResponseType(
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         int id,
-        CitaUpdateDto dto)
+        CitaDto dto)
     {
-        try
-        {
-            var updated =
-                await _citaService.UpdateAsync(id, dto);
+        var updated =
+            await _updateCitaUseCase
+                .ExecuteAsync(
+                    id,
+                    dto.ToModel());
 
-            if (!updated)
-                return NotFound();
+        if (!updated)
+            return NotFound();
 
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new
-            {
-                message = ex.Message
-            });
-        }
+        return NoContent();
     }
 
     /// <summary>
-    /// Elimina una cita.
+    /// Elimina una cita existente.
     /// </summary>
-    /// <param name="id">Identificador de la cita.</param>
+    /// <param name="id">
+    /// Identificador de la cita.
+    /// </param>
     [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        StatusCodes.Status204NoContent)]
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted =
-            await _citaService.DeleteAsync(id);
+            await _deleteCitaUseCase.ExecuteAsync(id);
 
         if (!deleted)
             return NotFound();

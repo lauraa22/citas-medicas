@@ -1,123 +1,179 @@
-using CitasMedicas.Application.DTOs.Pacientes;
-using CitasMedicas.Application.Interfaces.Services;
+using CitasMedicas.Api.DTOs;
+using CitasMedicas.Api.Mappings;
+using CitasMedicas.Application.UseCases.Pacientes;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CitasMedicas.Api.Controllers;
 
 /// <summary>
-/// Controlador para la gestión de pacientes.
+/// Controlador encargado de la gestión de pacientes.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class PacientesController : ControllerBase
 {
-    private readonly IPacienteService _pacienteService;
+    private readonly GetPacientesUseCase _getPacientesUseCase;
+    private readonly GetPacienteUseCase _getPacienteUseCase;
+    private readonly CreatePacienteUseCase _createPacienteUseCase;
+    private readonly UpdatePacienteUseCase _updatePacienteUseCase;
+    private readonly DeletePacienteUseCase _deletePacienteUseCase;
 
     /// <summary>
     /// Inicializa una nueva instancia del controlador de pacientes.
     /// </summary>
-    /// <param name="pacienteService">
-    /// Servicio encargado de gestionar las operaciones relacionadas con los pacientes.
+    /// <param name="getPacientesUseCase">
+    /// Caso de uso encargado de obtener todos los pacientes.
     /// </param>
-    public PacientesController(IPacienteService pacienteService)
+    /// <param name="getPacienteUseCase">
+    /// Caso de uso encargado de obtener un paciente.
+    /// </param>
+    /// <param name="createPacienteUseCase">
+    /// Caso de uso encargado de crear un paciente.
+    /// </param>
+    /// <param name="updatePacienteUseCase">
+    /// Caso de uso encargado de actualizar un paciente.
+    /// </param>
+    /// <param name="deletePacienteUseCase">
+    /// Caso de uso encargado de eliminar un paciente.
+    /// </param>
+    public PacientesController(
+        GetPacientesUseCase getPacientesUseCase,
+        GetPacienteUseCase getPacienteUseCase,
+        CreatePacienteUseCase createPacienteUseCase,
+        UpdatePacienteUseCase updatePacienteUseCase,
+        DeletePacienteUseCase deletePacienteUseCase)
     {
-        _pacienteService = pacienteService;
+        _getPacientesUseCase = getPacientesUseCase;
+        _getPacienteUseCase = getPacienteUseCase;
+        _createPacienteUseCase = createPacienteUseCase;
+        _updatePacienteUseCase = updatePacienteUseCase;
+        _deletePacienteUseCase = deletePacienteUseCase;
     }
 
     /// <summary>
-    /// Obtiene todos los pacientes.
+    /// Obtiene todos los pacientes registrados.
     /// </summary>
-    /// <returns>Listado de pacientes.</returns>
+    /// <returns>
+    /// Listado de pacientes registrados.
+    /// </returns>
     [HttpGet]
+    [ProducesResponseType(
+        typeof(IEnumerable<PacienteDto>),
+        StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<PacienteDto>>> GetAll()
     {
-        var pacientes = await _pacienteService.GetAllAsync();
+        var pacientes =
+            await _getPacientesUseCase.ExecuteAsync();
 
-        return Ok(pacientes);
+        return Ok(
+            pacientes.Select(
+                paciente => paciente.ToDto()));
     }
 
     /// <summary>
     /// Obtiene un paciente por su identificador.
     /// </summary>
-    /// <param name="id">Identificador del paciente.</param>
-    /// <returns>Paciente encontrado.</returns>
+    /// <param name="id">
+    /// Identificador del paciente.
+    /// </param>
+    /// <returns>
+    /// Paciente solicitado.
+    /// </returns>
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<PacienteDto>> GetById(int id)
+    [ProducesResponseType(
+        typeof(PacienteDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PacienteDto>> GetById(
+        int id)
     {
-        var paciente = await _pacienteService.GetByIdAsync(id);
+        var paciente =
+            await _getPacienteUseCase.ExecuteAsync(id);
 
         if (paciente is null)
             return NotFound();
 
-        return Ok(paciente);
+        return Ok(paciente.ToDto());
     }
 
     /// <summary>
     /// Crea un nuevo paciente.
     /// </summary>
-    /// <param name="dto">Datos del paciente.</param>
-    /// <returns>Paciente creado.</returns>
+    /// <param name="dto">
+    /// Datos del paciente.
+    /// </param>
+    /// <returns>
+    /// Paciente creado.
+    /// </returns>
     [HttpPost]
+    [ProducesResponseType(
+        typeof(PacienteDto),
+        StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PacienteDto>> Create(
-        PacienteCreateDto dto)
+        PacienteDto dto)
     {
-        try
-        {
-            var paciente =
-                await _pacienteService.CreateAsync(dto);
+        var paciente =
+            await _createPacienteUseCase
+                .ExecuteAsync(dto.ToModel());
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = paciente.Id },
-                paciente);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new
-            {
-                message = ex.Message
-            });
-        }
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = paciente.Id },
+            paciente.ToDto());
     }
 
     /// <summary>
     /// Actualiza un paciente existente.
     /// </summary>
-    /// <param name="id">Identificador del paciente.</param>
-    /// <param name="dto">Nuevos datos del paciente.</param>
+    /// <param name="id">
+    /// Identificador del paciente.
+    /// </param>
+    /// <param name="dto">
+    /// Nuevos datos del paciente.
+    /// </param>
     [HttpPut("{id:int}")]
+    [ProducesResponseType(
+        StatusCodes.Status204NoContent)]
+    [ProducesResponseType(
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         int id,
-        PacienteUpdateDto dto)
+        PacienteDto dto)
     {
-        try
-        {
-            var updated =
-                await _pacienteService.UpdateAsync(id, dto);
+        var updated =
+            await _updatePacienteUseCase
+                .ExecuteAsync(
+                    id,
+                    dto.ToModel());
 
-            if (!updated)
-                return NotFound();
+        if (!updated)
+            return NotFound();
 
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new
-            {
-                message = ex.Message
-            });
-        }
+        return NoContent();
     }
 
     /// <summary>
     /// Elimina un paciente.
     /// </summary>
-    /// <param name="id">Identificador del paciente.</param>
+    /// <param name="id">
+    /// Identificador del paciente.
+    /// </param>
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id)
+    [ProducesResponseType(
+        StatusCodes.Status204NoContent)]
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(
+        int id)
     {
         var deleted =
-            await _pacienteService.DeleteAsync(id);
+            await _deletePacienteUseCase
+                .ExecuteAsync(id);
 
         if (!deleted)
             return NotFound();

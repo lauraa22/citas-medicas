@@ -1,5 +1,6 @@
-using CitasMedicas.Application.DTOs.Diagnosticos;
-using CitasMedicas.Application.Interfaces.Services;
+using CitasMedicas.Api.DTOs;
+using CitasMedicas.Api.Mappings;
+using CitasMedicas.Application.UseCases.Diagnosticos;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CitasMedicas.Api.Controllers;
@@ -11,85 +12,116 @@ namespace CitasMedicas.Api.Controllers;
 [Route("api/[controller]")]
 public class DiagnosticosController : ControllerBase
 {
-    private readonly IDiagnosticoService _diagnosticoService;
+    private readonly GetDiagnosticosUseCase _getDiagnosticosUseCase;
+    private readonly GetDiagnosticoUseCase _getDiagnosticoUseCase;
+    private readonly CreateDiagnosticoUseCase _createDiagnosticoUseCase;
+    private readonly UpdateDiagnosticoUseCase _updateDiagnosticoUseCase;
+    private readonly DeleteDiagnosticoUseCase _deleteDiagnosticoUseCase;
 
     /// <summary>
-    /// Inicializa el controlador de diagnósticos.
+    /// Inicializa una nueva instancia del controlador de diagnósticos.
     /// </summary>
     public DiagnosticosController(
-        IDiagnosticoService diagnosticoService)
+        GetDiagnosticosUseCase getDiagnosticosUseCase,
+        GetDiagnosticoUseCase getDiagnosticoUseCase,
+        CreateDiagnosticoUseCase createDiagnosticoUseCase,
+        UpdateDiagnosticoUseCase updateDiagnosticoUseCase,
+        DeleteDiagnosticoUseCase deleteDiagnosticoUseCase)
     {
-        _diagnosticoService = diagnosticoService;
+        _getDiagnosticosUseCase = getDiagnosticosUseCase;
+        _getDiagnosticoUseCase = getDiagnosticoUseCase;
+        _createDiagnosticoUseCase = createDiagnosticoUseCase;
+        _updateDiagnosticoUseCase = updateDiagnosticoUseCase;
+        _deleteDiagnosticoUseCase = deleteDiagnosticoUseCase;
     }
 
     /// <summary>
     /// Obtiene todos los diagnósticos registrados.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<DiagnosticoDto>),
+    [ProducesResponseType(
+        typeof(IEnumerable<DiagnosticoDto>),
         StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<DiagnosticoDto>>> GetAll()
     {
         var diagnosticos =
-            await _diagnosticoService.GetAllAsync();
+            await _getDiagnosticosUseCase.ExecuteAsync();
 
-        return Ok(diagnosticos);
+        return Ok(
+            diagnosticos.Select(
+                diagnostico => diagnostico.ToDto()));
     }
 
     /// <summary>
     /// Obtiene un diagnóstico por su identificador.
     /// </summary>
-    /// <param name="id">Identificador del diagnóstico.</param>
+    /// <param name="id">
+    /// Identificador del diagnóstico.
+    /// </param>
     [HttpGet("{id:int}")]
-    [ProducesResponseType(typeof(DiagnosticoDto),
+    [ProducesResponseType(
+        typeof(DiagnosticoDto),
         StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<DiagnosticoDto>> GetById(int id)
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<DiagnosticoDto>> GetById(
+        int id)
     {
         var diagnostico =
-            await _diagnosticoService.GetByIdAsync(id);
+            await _getDiagnosticoUseCase.ExecuteAsync(id);
 
         if (diagnostico is null)
             return NotFound();
 
-        return Ok(diagnostico);
+        return Ok(diagnostico.ToDto());
     }
 
     /// <summary>
     /// Crea un nuevo diagnóstico.
     /// </summary>
     /// <param name="dto">
-    /// Datos necesarios para crear el diagnóstico.
+    /// Datos del diagnóstico.
     /// </param>
     [HttpPost]
-    [ProducesResponseType(typeof(DiagnosticoDto),
+    [ProducesResponseType(
+        typeof(DiagnosticoDto),
         StatusCodes.Status201Created)]
     public async Task<ActionResult<DiagnosticoDto>> Create(
-        DiagnosticoCreateDto dto)
+        DiagnosticoDto dto)
     {
         var diagnostico =
-            await _diagnosticoService.CreateAsync(dto);
+            await _createDiagnosticoUseCase
+                .ExecuteAsync(dto.ToModel());
 
         return CreatedAtAction(
             nameof(GetById),
             new { id = diagnostico.Id },
-            diagnostico);
+            diagnostico.ToDto());
     }
 
     /// <summary>
     /// Actualiza un diagnóstico existente.
     /// </summary>
-    /// <param name="id">Identificador del diagnóstico.</param>
-    /// <param name="dto">Nuevos datos del diagnóstico.</param>
+    /// <param name="id">
+    /// Identificador del diagnóstico.
+    /// </param>
+    /// <param name="dto">
+    /// Nuevos datos del diagnóstico.
+    /// </param>
     [HttpPut("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        StatusCodes.Status204NoContent)]
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         int id,
-        DiagnosticoUpdateDto dto)
+        DiagnosticoDto dto)
     {
         var updated =
-            await _diagnosticoService.UpdateAsync(id, dto);
+            await _updateDiagnosticoUseCase
+                .ExecuteAsync(
+                    id,
+                    dto.ToModel());
 
         if (!updated)
             return NotFound();
@@ -100,14 +132,20 @@ public class DiagnosticosController : ControllerBase
     /// <summary>
     /// Elimina un diagnóstico.
     /// </summary>
-    /// <param name="id">Identificador del diagnóstico.</param>
+    /// <param name="id">
+    /// Identificador del diagnóstico.
+    /// </param>
     [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id)
+    [ProducesResponseType(
+        StatusCodes.Status204NoContent)]
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(
+        int id)
     {
         var deleted =
-            await _diagnosticoService.DeleteAsync(id);
+            await _deleteDiagnosticoUseCase
+                .ExecuteAsync(id);
 
         if (!deleted)
             return NotFound();

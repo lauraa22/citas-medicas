@@ -1,33 +1,61 @@
-using CitasMedicas.Application.DTOs.Usuarios;
-using CitasMedicas.Application.Interfaces.Services;
+using CitasMedicas.Api.DTOs;
+using CitasMedicas.Api.Mappings;
+using CitasMedicas.Application.UseCases.Usuarios;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CitasMedicas.Api.Controllers;
 
 /// <summary>
-/// Controlador para la gestión de usuarios.
+/// Controlador encargado de la gestión de usuarios.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class UsuariosController : ControllerBase
 {
-    private readonly IUsuarioService _usuarioService;
+    private readonly GetUsuariosUseCase _getUsuariosUseCase;
+    private readonly GetUsuarioUseCase _getUsuarioUseCase;
+    private readonly CreateUsuarioUseCase _createUsuarioUseCase;
+    private readonly UpdateUsuarioUseCase _updateUsuarioUseCase;
+    private readonly DeleteUsuarioUseCase _deleteUsuarioUseCase;
 
     /// <summary>
-    /// Inicializa el controlador de usuarios.
+    /// Inicializa una nueva instancia del controlador de usuarios.
     /// </summary>
-    /// <param name="usuarioService">
-    /// Servicio encargado de la lógica de negocio de usuarios.
+    /// <param name="getUsuariosUseCase">
+    /// Caso de uso encargado de obtener todos los usuarios.
+    /// </param>
+    /// <param name="getUsuarioUseCase">
+    /// Caso de uso encargado de obtener un usuario.
+    /// </param>
+    /// <param name="createUsuarioUseCase">
+    /// Caso de uso encargado de crear un usuario.
+    /// </param>
+    /// <param name="updateUsuarioUseCase">
+    /// Caso de uso encargado de actualizar un usuario.
+    /// </param>
+    /// <param name="deleteUsuarioUseCase">
+    /// Caso de uso encargado de eliminar un usuario.
     /// </param>
     public UsuariosController(
-        IUsuarioService usuarioService)
+        GetUsuariosUseCase getUsuariosUseCase,
+        GetUsuarioUseCase getUsuarioUseCase,
+        CreateUsuarioUseCase createUsuarioUseCase,
+        UpdateUsuarioUseCase updateUsuarioUseCase,
+        DeleteUsuarioUseCase deleteUsuarioUseCase)
     {
-        _usuarioService = usuarioService;
+        _getUsuariosUseCase = getUsuariosUseCase;
+        _getUsuarioUseCase = getUsuarioUseCase;
+        _createUsuarioUseCase = createUsuarioUseCase;
+        _updateUsuarioUseCase = updateUsuarioUseCase;
+        _deleteUsuarioUseCase = deleteUsuarioUseCase;
     }
 
     /// <summary>
-    /// Obtiene todos los usuarios.
+    /// Obtiene todos los usuarios registrados.
     /// </summary>
+    /// <returns>
+    /// Listado de usuarios.
+    /// </returns>
     [HttpGet]
     [ProducesResponseType(
         typeof(IEnumerable<UsuarioDto>),
@@ -35,14 +63,22 @@ public class UsuariosController : ControllerBase
     public async Task<ActionResult<IEnumerable<UsuarioDto>>> GetAll()
     {
         var usuarios =
-            await _usuarioService.GetAllAsync();
+            await _getUsuariosUseCase.ExecuteAsync();
 
-        return Ok(usuarios);
+        return Ok(
+            usuarios.Select(
+                usuario => usuario.ToDto()));
     }
 
     /// <summary>
     /// Obtiene un usuario por su identificador.
     /// </summary>
+    /// <param name="id">
+    /// Identificador del usuario.
+    /// </param>
+    /// <returns>
+    /// Usuario solicitado.
+    /// </returns>
     [HttpGet("{id:int}")]
     [ProducesResponseType(
         typeof(UsuarioDto),
@@ -53,17 +89,23 @@ public class UsuariosController : ControllerBase
         int id)
     {
         var usuario =
-            await _usuarioService.GetByIdAsync(id);
+            await _getUsuarioUseCase.ExecuteAsync(id);
 
         if (usuario is null)
             return NotFound();
 
-        return Ok(usuario);
+        return Ok(usuario.ToDto());
     }
 
     /// <summary>
     /// Crea un nuevo usuario.
     /// </summary>
+    /// <param name="dto">
+    /// Datos del usuario.
+    /// </param>
+    /// <returns>
+    /// Usuario creado.
+    /// </returns>
     [HttpPost]
     [ProducesResponseType(
         typeof(UsuarioDto),
@@ -71,30 +113,27 @@ public class UsuariosController : ControllerBase
     [ProducesResponseType(
         StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<UsuarioDto>> Create(
-        UsuarioCreateDto dto)
+        UsuarioDto dto)
     {
-        try
-        {
-            var usuario =
-                await _usuarioService.CreateAsync(dto);
+        var usuario =
+            await _createUsuarioUseCase
+                .ExecuteAsync(dto.ToModel());
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = usuario.Id },
-                usuario);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new
-            {
-                message = ex.Message
-            });
-        }
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = usuario.Id },
+            usuario.ToDto());
     }
 
     /// <summary>
-    /// Actualiza un usuario.
+    /// Actualiza un usuario existente.
     /// </summary>
+    /// <param name="id">
+    /// Identificador del usuario.
+    /// </param>
+    /// <param name="dto">
+    /// Nuevos datos del usuario.
+    /// </param>
     [HttpPut("{id:int}")]
     [ProducesResponseType(
         StatusCodes.Status204NoContent)]
@@ -104,32 +143,26 @@ public class UsuariosController : ControllerBase
         StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         int id,
-        UsuarioUpdateDto dto)
+        UsuarioDto dto)
     {
-        try
-        {
-            var updated =
-                await _usuarioService.UpdateAsync(
+        var updated =
+            await _updateUsuarioUseCase
+                .ExecuteAsync(
                     id,
-                    dto);
+                    dto.ToModel());
 
-            if (!updated)
-                return NotFound();
+        if (!updated)
+            return NotFound();
 
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new
-            {
-                message = ex.Message
-            });
-        }
+        return NoContent();
     }
 
     /// <summary>
     /// Elimina un usuario.
     /// </summary>
+    /// <param name="id">
+    /// Identificador del usuario.
+    /// </param>
     [HttpDelete("{id:int}")]
     [ProducesResponseType(
         StatusCodes.Status204NoContent)]
@@ -140,22 +173,12 @@ public class UsuariosController : ControllerBase
     public async Task<IActionResult> Delete(
         int id)
     {
-        try
-        {
-            var deleted =
-                await _usuarioService.DeleteAsync(id);
+        var deleted =
+            await _deleteUsuarioUseCase.ExecuteAsync(id);
 
-            if (!deleted)
-                return NotFound();
+        if (!deleted)
+            return NotFound();
 
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new
-            {
-                message = ex.Message
-            });
-        }
+        return NoContent();
     }
 }

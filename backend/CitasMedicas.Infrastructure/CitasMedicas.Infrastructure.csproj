@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CitasMedicas.Domain\CitasMedicas.Domain.csproj" />
-    <ProjectReference Include="..\CitasMedicas.Application\CitasMedicas.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

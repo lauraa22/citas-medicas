@@ -1,13 +1,19 @@
 using CitasMedicas.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-using CitasMedicas.Application.Interfaces.Repositories;
+using CitasMedicas.Domain.Interfaces.Repositories;
 using CitasMedicas.Infrastructure.Repositories;
 
 using CitasMedicas.Application.Mappings;
 
-using CitasMedicas.Application.Interfaces.Services;
-using CitasMedicas.Application.Services;
+using CitasMedicas.Application.UseCases.Usuarios;
+using CitasMedicas.Application.UseCases.Pacientes;
+using CitasMedicas.Application.UseCases.Medicos;
+using CitasMedicas.Application.UseCases.Citas;
+using CitasMedicas.Application.UseCases.Diagnosticos;
+
+using CitasMedicas.Api.Exceptions;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,12 +38,38 @@ builder.Services.AddAutoMapper(
     typeof(MappingProfile)
 );
 
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<IPacienteService, PacienteService>();
-builder.Services.AddScoped<IMedicoService, MedicoService>();
-builder.Services.AddScoped<ICitaService, CitaService>();
-builder.Services.AddScoped<IDiagnosticoService, DiagnosticoService>();
+builder.Services.AddScoped<GetUsuariosUseCase>();
+builder.Services.AddScoped<GetUsuarioUseCase>();
+builder.Services.AddScoped<CreateUsuarioUseCase>();
+builder.Services.AddScoped<UpdateUsuarioUseCase>();
+builder.Services.AddScoped<DeleteUsuarioUseCase>();
 
+builder.Services.AddScoped<GetPacientesUseCase>();
+builder.Services.AddScoped<GetPacienteUseCase>();
+builder.Services.AddScoped<CreatePacienteUseCase>();
+builder.Services.AddScoped<UpdatePacienteUseCase>();
+builder.Services.AddScoped<DeletePacienteUseCase>();
+
+
+builder.Services.AddScoped<GetMedicosUseCase>();
+builder.Services.AddScoped<GetMedicoUseCase>();
+builder.Services.AddScoped<CreateMedicoUseCase>();
+builder.Services.AddScoped<UpdateMedicoUseCase>();
+builder.Services.AddScoped<DeleteMedicoUseCase>();
+
+
+builder.Services.AddScoped<GetCitasUseCase>();
+builder.Services.AddScoped<GetCitaUseCase>();
+builder.Services.AddScoped<CreateCitaUseCase>();
+builder.Services.AddScoped<UpdateCitaUseCase>();
+builder.Services.AddScoped<DeleteCitaUseCase>();
+
+
+builder.Services.AddScoped<GetDiagnosticosUseCase>();
+builder.Services.AddScoped<GetDiagnosticoUseCase>();
+builder.Services.AddScoped<CreateDiagnosticoUseCase>();
+builder.Services.AddScoped<UpdateDiagnosticoUseCase>();
+builder.Services.AddScoped<DeleteDiagnosticoUseCase>();
 
 builder.Services.AddCors(options =>
 {
@@ -51,6 +83,11 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+builder.Services.AddProblemDetails();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -72,6 +109,11 @@ if (app.Environment.IsDevelopment())
         );
     });
 }
+
+
+app.UseExceptionHandler();
+
+app.UseHttpsRedirection();
 
 app.UseCors("AngularPolicy");
 

@@ -1,9 +1,5 @@
 using AutoMapper;
-using CitasMedicas.Application.DTOs.Citas;
-using CitasMedicas.Application.DTOs.Diagnosticos;
-using CitasMedicas.Application.DTOs.Medicos;
-using CitasMedicas.Application.DTOs.Pacientes;
-using CitasMedicas.Application.DTOs.Usuarios;
+using CitasMedicas.Application.Models;
 using CitasMedicas.Domain.Entities;
 
 namespace CitasMedicas.Application.Mappings;
@@ -12,36 +8,48 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<Usuario, UsuarioDto>()
+        CreateMap<Usuario, UsuarioModel>()
             .ForMember(
                 destination => destination.Usuario,
-                options => options.MapFrom(source => source.NombreUsuario));
+                options => options.MapFrom(
+                    source => source.NombreUsuario))
+            .ForMember(
+                destination => destination.Clave,
+                options => options.Ignore());
 
-        CreateMap<UsuarioCreateDto, Usuario>()
+        CreateMap<UsuarioModel, Usuario>()
+            .ForMember(
+                destination => destination.Id,
+                options => options.Ignore())
             .ForMember(
                 destination => destination.NombreUsuario,
                 options => options.MapFrom(
                     source => source.Usuario));
 
-        CreateMap<UsuarioUpdateDto, Usuario>()
-            .ForMember(
-                destination => destination.NombreUsuario,
-                options => options.MapFrom(
-                    source => source.Usuario));
-                    
-        CreateMap<Paciente, PacienteDto>()
+
+
+        CreateMap<Paciente, PacienteModel>()
             .ForMember(
                 destination => destination.Usuario,
-                options => options.MapFrom(source => source.NombreUsuario))
+                options => options.MapFrom(
+                    source => source.NombreUsuario))
+            .ForMember(
+                destination => destination.Clave,
+                options => options.Ignore())
             .ForMember(
                 destination => destination.MedicoIds,
                 options => options.MapFrom(
-                    source => source.Medicos.Select(m => m.Id)));
+                    source => source.Medicos.Select(
+                        medico => medico.Id)));
 
-        CreateMap<PacienteCreateDto, Paciente>()
+        CreateMap<PacienteModel, Paciente>()
+            .ForMember(
+                destination => destination.Id,
+                options => options.Ignore())
             .ForMember(
                 destination => destination.NombreUsuario,
-                options => options.MapFrom(source => source.Usuario))
+                options => options.MapFrom(
+                    source => source.Usuario))
             .ForMember(
                 destination => destination.Medicos,
                 options => options.Ignore())
@@ -49,30 +57,30 @@ public class MappingProfile : Profile
                 destination => destination.Citas,
                 options => options.Ignore());
 
-        CreateMap<PacienteUpdateDto, Paciente>()
-            .ForMember(
-                destination => destination.NombreUsuario,
-                options => options.MapFrom(source => source.Usuario))
-            .ForMember(
-                destination => destination.Medicos,
-                options => options.Ignore())
-            .ForMember(
-                destination => destination.Citas,
-                options => options.Ignore());
 
-        CreateMap<Medico, MedicoDto>()
+
+        CreateMap<Medico, MedicoModel>()
             .ForMember(
                 destination => destination.Usuario,
-                options => options.MapFrom(source => source.NombreUsuario))
+                options => options.MapFrom(
+                    source => source.NombreUsuario))
+            .ForMember(
+                destination => destination.Clave,
+                options => options.Ignore())
             .ForMember(
                 destination => destination.PacienteIds,
                 options => options.MapFrom(
-                    source => source.Pacientes.Select(p => p.Id)));
+                    source => source.Pacientes.Select(
+                        paciente => paciente.Id)));
 
-        CreateMap<MedicoCreateDto, Medico>()
+        CreateMap<MedicoModel, Medico>()
+            .ForMember(
+                destination => destination.Id,
+                options => options.Ignore())
             .ForMember(
                 destination => destination.NombreUsuario,
-                options => options.MapFrom(source => source.Usuario))
+                options => options.MapFrom(
+                    source => source.Usuario))
             .ForMember(
                 destination => destination.Pacientes,
                 options => options.Ignore())
@@ -80,29 +88,32 @@ public class MappingProfile : Profile
                 destination => destination.Citas,
                 options => options.Ignore());
 
-        CreateMap<MedicoUpdateDto, Medico>()
+
+
+        CreateMap<Cita, CitaModel>();
+
+        CreateMap<CitaModel, Cita>()
             .ForMember(
-                destination => destination.NombreUsuario,
-                options => options.MapFrom(source => source.Usuario))
-            .ForMember(
-                destination => destination.Pacientes,
+                destination => destination.Id,
                 options => options.Ignore())
             .ForMember(
-                destination => destination.Citas,
-                options => options.Ignore());
-
-        CreateMap<Cita, CitaDto>();
-        CreateMap<CitaCreateDto, Cita>();
-        CreateMap<CitaUpdateDto, Cita>();
-
-        CreateMap<Diagnostico, DiagnosticoDto>();
-
-        CreateMap<DiagnosticoCreateDto, Diagnostico>()
+                destination => destination.Paciente,
+                options => options.Ignore())
             .ForMember(
-                destination => destination.Cita,
+                destination => destination.Medico,
+                options => options.Ignore())
+            .ForMember(
+                destination => destination.Diagnostico,
                 options => options.Ignore());
 
-        CreateMap<DiagnosticoUpdateDto, Diagnostico>()
+
+
+        CreateMap<Diagnostico, DiagnosticoModel>();
+
+        CreateMap<DiagnosticoModel, Diagnostico>()
+            .ForMember(
+                destination => destination.Id,
+                options => options.Ignore())
             .ForMember(
                 destination => destination.Cita,
                 options => options.Ignore());

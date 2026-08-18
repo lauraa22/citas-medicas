@@ -1,4 +1,4 @@
-using CitasMedicas.Application.Interfaces.Repositories;
+using CitasMedicas.Domain.Interfaces.Repositories;
 using CitasMedicas.Domain.Entities;
 using CitasMedicas.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -31,19 +31,19 @@ public class UnitOfWork : IUnitOfWork
         _context = context;
 
         Usuarios =
-            new GenericRepository<Usuario>(context);
+            new SqlServerGenericRepository<Usuario>(context);
 
         Pacientes =
-            new PacienteRepository(context);
+            new SqlServerPacienteRepository(context);
 
         Medicos =
-            new MedicoRepository(context);
+            new SqlServerMedicoRepository(context);
 
         Citas =
-            new GenericRepository<Cita>(context);
+            new SqlServerGenericRepository<Cita>(context);
 
         Diagnosticos =
-            new GenericRepository<Diagnostico>(context);
+            new SqlServerGenericRepository<Diagnostico>(context);
     }
 
     public async Task<int> SaveChangesAsync()
