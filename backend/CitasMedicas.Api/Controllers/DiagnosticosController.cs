@@ -1,5 +1,6 @@
+using AutoMapper;
 using CitasMedicas.Api.DTOs;
-using CitasMedicas.Api.Mappings;
+using CitasMedicas.Application.Models;
 using CitasMedicas.Application.UseCases.Diagnosticos;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,22 +18,43 @@ public class DiagnosticosController : ControllerBase
     private readonly CreateDiagnosticoUseCase _createDiagnosticoUseCase;
     private readonly UpdateDiagnosticoUseCase _updateDiagnosticoUseCase;
     private readonly DeleteDiagnosticoUseCase _deleteDiagnosticoUseCase;
+    private readonly IMapper _mapper;
 
     /// <summary>
     /// Inicializa una nueva instancia del controlador de diagnósticos.
     /// </summary>
+    /// <param name="getDiagnosticosUseCase">
+    /// Caso de uso encargado de obtener todos los diagnósticos.
+    /// </param>
+    /// <param name="getDiagnosticoUseCase">
+    /// Caso de uso encargado de obtener un diagnóstico.
+    /// </param>
+    /// <param name="createDiagnosticoUseCase">
+    /// Caso de uso encargado de crear un diagnóstico.
+    /// </param>
+    /// <param name="updateDiagnosticoUseCase">
+    /// Caso de uso encargado de actualizar un diagnóstico.
+    /// </param>
+    /// <param name="deleteDiagnosticoUseCase">
+    /// Caso de uso encargado de eliminar un diagnóstico.
+    /// </param>
+    /// <param name="mapper">
+    /// Mapper utilizado para convertir DTOs y modelos de aplicación.
+    /// </param>
     public DiagnosticosController(
         GetDiagnosticosUseCase getDiagnosticosUseCase,
         GetDiagnosticoUseCase getDiagnosticoUseCase,
         CreateDiagnosticoUseCase createDiagnosticoUseCase,
         UpdateDiagnosticoUseCase updateDiagnosticoUseCase,
-        DeleteDiagnosticoUseCase deleteDiagnosticoUseCase)
+        DeleteDiagnosticoUseCase deleteDiagnosticoUseCase,
+        IMapper mapper)
     {
         _getDiagnosticosUseCase = getDiagnosticosUseCase;
         _getDiagnosticoUseCase = getDiagnosticoUseCase;
         _createDiagnosticoUseCase = createDiagnosticoUseCase;
         _updateDiagnosticoUseCase = updateDiagnosticoUseCase;
         _deleteDiagnosticoUseCase = deleteDiagnosticoUseCase;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -48,8 +70,7 @@ public class DiagnosticosController : ControllerBase
             await _getDiagnosticosUseCase.ExecuteAsync();
 
         return Ok(
-            diagnosticos.Select(
-                diagnostico => diagnostico.ToDto()));
+            _mapper.Map<IEnumerable<DiagnosticoDto>>(diagnosticos));
     }
 
     /// <summary>
@@ -73,7 +94,8 @@ public class DiagnosticosController : ControllerBase
         if (diagnostico is null)
             return NotFound();
 
-        return Ok(diagnostico.ToDto());
+        return Ok(
+            _mapper.Map<DiagnosticoDto>(diagnostico));
     }
 
     /// <summary>
@@ -89,14 +111,17 @@ public class DiagnosticosController : ControllerBase
     public async Task<ActionResult<DiagnosticoDto>> Create(
         DiagnosticoDto dto)
     {
+        var model =
+            _mapper.Map<DiagnosticoModel>(dto);
+
         var diagnostico =
             await _createDiagnosticoUseCase
-                .ExecuteAsync(dto.ToModel());
+                .ExecuteAsync(model);
 
         return CreatedAtAction(
             nameof(GetById),
             new { id = diagnostico.Id },
-            diagnostico.ToDto());
+            _mapper.Map<DiagnosticoDto>(diagnostico));
     }
 
     /// <summary>
@@ -117,11 +142,14 @@ public class DiagnosticosController : ControllerBase
         int id,
         DiagnosticoDto dto)
     {
+        var model =
+            _mapper.Map<DiagnosticoModel>(dto);
+
         var updated =
             await _updateDiagnosticoUseCase
                 .ExecuteAsync(
                     id,
-                    dto.ToModel());
+                    model);
 
         if (!updated)
             return NotFound();

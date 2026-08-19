@@ -13,6 +13,7 @@ using CitasMedicas.Application.UseCases.Citas;
 using CitasMedicas.Application.UseCases.Diagnosticos;
 
 using CitasMedicas.Api.Exceptions;
+using CitasMedicas.Api.Mappings;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,7 +36,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddAutoMapper(
     cfg => { },
-    typeof(MappingProfile)
+    typeof(MappingProfile),
+    typeof(ApiMappingProfile)
 );
 
 builder.Services.AddScoped<GetUsuariosUseCase>();

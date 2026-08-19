@@ -1,5 +1,6 @@
+using AutoMapper;
 using CitasMedicas.Api.DTOs;
-using CitasMedicas.Api.Mappings;
+using CitasMedicas.Application.Models;
 using CitasMedicas.Application.UseCases.Usuarios;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,6 +18,7 @@ public class UsuariosController : ControllerBase
     private readonly CreateUsuarioUseCase _createUsuarioUseCase;
     private readonly UpdateUsuarioUseCase _updateUsuarioUseCase;
     private readonly DeleteUsuarioUseCase _deleteUsuarioUseCase;
+    private readonly IMapper _mapper;
 
     /// <summary>
     /// Inicializa una nueva instancia del controlador de usuarios.
@@ -36,18 +38,23 @@ public class UsuariosController : ControllerBase
     /// <param name="deleteUsuarioUseCase">
     /// Caso de uso encargado de eliminar un usuario.
     /// </param>
+    /// <param name="mapper">
+    /// Mapper utilizado para convertir DTOs y modelos de aplicación.
+    /// </param>
     public UsuariosController(
         GetUsuariosUseCase getUsuariosUseCase,
         GetUsuarioUseCase getUsuarioUseCase,
         CreateUsuarioUseCase createUsuarioUseCase,
         UpdateUsuarioUseCase updateUsuarioUseCase,
-        DeleteUsuarioUseCase deleteUsuarioUseCase)
+        DeleteUsuarioUseCase deleteUsuarioUseCase,
+        IMapper mapper)
     {
         _getUsuariosUseCase = getUsuariosUseCase;
         _getUsuarioUseCase = getUsuarioUseCase;
         _createUsuarioUseCase = createUsuarioUseCase;
         _updateUsuarioUseCase = updateUsuarioUseCase;
         _deleteUsuarioUseCase = deleteUsuarioUseCase;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -66,8 +73,7 @@ public class UsuariosController : ControllerBase
             await _getUsuariosUseCase.ExecuteAsync();
 
         return Ok(
-            usuarios.Select(
-                usuario => usuario.ToDto()));
+            _mapper.Map<IEnumerable<UsuarioDto>>(usuarios));
     }
 
     /// <summary>
@@ -94,7 +100,8 @@ public class UsuariosController : ControllerBase
         if (usuario is null)
             return NotFound();
 
-        return Ok(usuario.ToDto());
+        return Ok(
+            _mapper.Map<UsuarioDto>(usuario));
     }
 
     /// <summary>
@@ -115,14 +122,17 @@ public class UsuariosController : ControllerBase
     public async Task<ActionResult<UsuarioDto>> Create(
         UsuarioDto dto)
     {
+        var model =
+            _mapper.Map<UsuarioModel>(dto);
+
         var usuario =
             await _createUsuarioUseCase
-                .ExecuteAsync(dto.ToModel());
+                .ExecuteAsync(model);
 
         return CreatedAtAction(
             nameof(GetById),
             new { id = usuario.Id },
-            usuario.ToDto());
+            _mapper.Map<UsuarioDto>(usuario));
     }
 
     /// <summary>
@@ -145,11 +155,14 @@ public class UsuariosController : ControllerBase
         int id,
         UsuarioDto dto)
     {
+        var model =
+            _mapper.Map<UsuarioModel>(dto);
+
         var updated =
             await _updateUsuarioUseCase
                 .ExecuteAsync(
                     id,
-                    dto.ToModel());
+                    model);
 
         if (!updated)
             return NotFound();

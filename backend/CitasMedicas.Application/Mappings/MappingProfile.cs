@@ -4,8 +4,11 @@ using CitasMedicas.Domain.Entities;
 
 namespace CitasMedicas.Application.Mappings;
 
-public class MappingProfile : Profile
-{
+/// <summary>
+/// Configuración de AutoMapper entre entidades de dominio
+/// y modelos de aplicación.
+/// </summary>
+public class MappingProfile : Profile{
     public MappingProfile()
     {
         CreateMap<Usuario, UsuarioModel>()

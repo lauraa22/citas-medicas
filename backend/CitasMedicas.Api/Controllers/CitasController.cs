@@ -1,5 +1,6 @@
+using AutoMapper;
 using CitasMedicas.Api.DTOs;
-using CitasMedicas.Api.Mappings;
+using CitasMedicas.Application.Models;
 using CitasMedicas.Application.UseCases.Citas;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,6 +18,7 @@ public class CitasController : ControllerBase
     private readonly CreateCitaUseCase _createCitaUseCase;
     private readonly UpdateCitaUseCase _updateCitaUseCase;
     private readonly DeleteCitaUseCase _deleteCitaUseCase;
+    private readonly IMapper _mapper;
 
     /// <summary>
     /// Inicializa una nueva instancia del controlador de citas.
@@ -36,18 +38,23 @@ public class CitasController : ControllerBase
     /// <param name="deleteCitaUseCase">
     /// Caso de uso para eliminar una cita.
     /// </param>
+    /// <param name="mapper">
+    /// Mapper utilizado para convertir DTOs y modelos de aplicación.
+    /// </param>
     public CitasController(
         GetCitasUseCase getCitasUseCase,
         GetCitaUseCase getCitaUseCase,
         CreateCitaUseCase createCitaUseCase,
         UpdateCitaUseCase updateCitaUseCase,
-        DeleteCitaUseCase deleteCitaUseCase)
+        DeleteCitaUseCase deleteCitaUseCase,
+        IMapper mapper)
     {
         _getCitasUseCase = getCitasUseCase;
         _getCitaUseCase = getCitaUseCase;
         _createCitaUseCase = createCitaUseCase;
         _updateCitaUseCase = updateCitaUseCase;
         _deleteCitaUseCase = deleteCitaUseCase;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -66,7 +73,7 @@ public class CitasController : ControllerBase
             await _getCitasUseCase.ExecuteAsync();
 
         return Ok(
-            citas.Select(cita => cita.ToDto()));
+            _mapper.Map<IEnumerable<CitaDto>>(citas));
     }
 
     /// <summary>
@@ -92,7 +99,8 @@ public class CitasController : ControllerBase
         if (cita is null)
             return NotFound();
 
-        return Ok(cita.ToDto());
+        return Ok(
+            _mapper.Map<CitaDto>(cita));
     }
 
     /// <summary>
@@ -113,14 +121,17 @@ public class CitasController : ControllerBase
     public async Task<ActionResult<CitaDto>> Create(
         CitaDto dto)
     {
+        var model =
+            _mapper.Map<CitaModel>(dto);
+
         var cita =
             await _createCitaUseCase
-                .ExecuteAsync(dto.ToModel());
+                .ExecuteAsync(model);
 
         return CreatedAtAction(
             nameof(GetById),
             new { id = cita.Id },
-            cita.ToDto());
+            _mapper.Map<CitaDto>(cita));
     }
 
     /// <summary>
@@ -143,11 +154,14 @@ public class CitasController : ControllerBase
         int id,
         CitaDto dto)
     {
+        var model =
+            _mapper.Map<CitaModel>(dto);
+
         var updated =
             await _updateCitaUseCase
                 .ExecuteAsync(
                     id,
-                    dto.ToModel());
+                    model);
 
         if (!updated)
             return NotFound();

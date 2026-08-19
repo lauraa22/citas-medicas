@@ -1,5 +1,6 @@
+using AutoMapper;
 using CitasMedicas.Api.DTOs;
-using CitasMedicas.Api.Mappings;
+using CitasMedicas.Application.Models;
 using CitasMedicas.Application.UseCases.Medicos;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,6 +18,7 @@ public class MedicosController : ControllerBase
     private readonly CreateMedicoUseCase _createMedicoUseCase;
     private readonly UpdateMedicoUseCase _updateMedicoUseCase;
     private readonly DeleteMedicoUseCase _deleteMedicoUseCase;
+    private readonly IMapper _mapper;
 
     /// <summary>
     /// Inicializa una nueva instancia del controlador de médicos.
@@ -36,18 +38,23 @@ public class MedicosController : ControllerBase
     /// <param name="deleteMedicoUseCase">
     /// Caso de uso para eliminar un médico.
     /// </param>
+    /// <param name="mapper">
+    /// Mapper utilizado para convertir DTOs y modelos de aplicación.
+    /// </param>
     public MedicosController(
         GetMedicosUseCase getMedicosUseCase,
         GetMedicoUseCase getMedicoUseCase,
         CreateMedicoUseCase createMedicoUseCase,
         UpdateMedicoUseCase updateMedicoUseCase,
-        DeleteMedicoUseCase deleteMedicoUseCase)
+        DeleteMedicoUseCase deleteMedicoUseCase,
+        IMapper mapper)
     {
         _getMedicosUseCase = getMedicosUseCase;
         _getMedicoUseCase = getMedicoUseCase;
         _createMedicoUseCase = createMedicoUseCase;
         _updateMedicoUseCase = updateMedicoUseCase;
         _deleteMedicoUseCase = deleteMedicoUseCase;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -66,8 +73,7 @@ public class MedicosController : ControllerBase
             await _getMedicosUseCase.ExecuteAsync();
 
         return Ok(
-            medicos.Select(
-                medico => medico.ToDto()));
+            _mapper.Map<IEnumerable<MedicoDto>>(medicos));
     }
 
     /// <summary>
@@ -94,7 +100,8 @@ public class MedicosController : ControllerBase
         if (medico is null)
             return NotFound();
 
-        return Ok(medico.ToDto());
+        return Ok(
+            _mapper.Map<MedicoDto>(medico));
     }
 
     /// <summary>
@@ -115,14 +122,17 @@ public class MedicosController : ControllerBase
     public async Task<ActionResult<MedicoDto>> Create(
         MedicoDto dto)
     {
+        var model =
+            _mapper.Map<MedicoModel>(dto);
+
         var medico =
             await _createMedicoUseCase
-                .ExecuteAsync(dto.ToModel());
+                .ExecuteAsync(model);
 
         return CreatedAtAction(
             nameof(GetById),
             new { id = medico.Id },
-            medico.ToDto());
+            _mapper.Map<MedicoDto>(medico));
     }
 
     /// <summary>
@@ -145,11 +155,14 @@ public class MedicosController : ControllerBase
         int id,
         MedicoDto dto)
     {
+        var model =
+            _mapper.Map<MedicoModel>(dto);
+
         var updated =
             await _updateMedicoUseCase
                 .ExecuteAsync(
                     id,
-                    dto.ToModel());
+                    model);
 
         if (!updated)
             return NotFound();
