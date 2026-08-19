@@ -44,9 +44,23 @@ citas-medicas/
 - AutoMapper
 - Repository Pattern
 - Unit of Work
+- Use Cases
+- Inyección de dependencias
 - Transacciones con Entity Framework Core
+- Global Exception Handler
 - OpenAPI
 - Swagger UI
+
+### Testing backend
+
+- xUnit
+- Moq
+- Microsoft.AspNetCore.Mvc.Testing
+- WebApplicationFactory
+- Entity Framework Core
+- SQL Server Express
+- Coverlet
+- ReportGenerator
 
 ---
 
@@ -61,9 +75,10 @@ CitasMedicas.Application
         ↓
 CitasMedicas.Domain
 
+
 CitasMedicas.Infrastructure
-        ↑
-CitasMedicas.Application
+        ↓
+CitasMedicas.Domain
 ```
 
 El flujo habitual de una operación es:
@@ -75,7 +90,9 @@ HttpClient
    ↓
 Controller REST
    ↓
-Service
+AutoMapper
+   ↓
+UseCase
    ↓
 Unit of Work / Repository
    ↓
@@ -94,23 +111,37 @@ Contiene las entidades de dominio:
 - `Cita`
 - `Diagnostico`
 
+y las interfaces de repositorio:
+
+- `IGenericRepository`
+- `IPacienteRepository`
+- `IMedicoRepository`
+- `IUnitOfWork`
+
+El uso de interfaces permite desacoplar la lógica de aplicación de la implementación concreta de persistencia.
+
+
 ### `CitasMedicas.Application`
 
-Contiene:
+Contiene la lógica de aplicación.
 
-- DTOs
-- Interfaces de servicios
-- Interfaces de repositorios
-- Servicios de aplicación
-- Configuración de AutoMapper
-- `IUnitOfWork`
+Incluye:
+
+- Modelos internos de aplicación.
+- Casos de uso.
+- Configuración de AutoMapper entre entidades y modelos.
+
+Los casos de uso están separados por operación.
+
+Cada UseCase tiene una responsabilidad concreta y expone un método principal:
+
 
 ### `CitasMedicas.Infrastructure`
 
-Contiene:
+Contiene la implementación del acceso a datos:
 
 - `CitasMedicasDbContext`
-- Repositorios
+- Repositorios SQL Server
 - Implementación de `UnitOfWork`
 - Configuración de Entity Framework Core
 - Migraciones
@@ -120,8 +151,11 @@ Contiene:
 Contiene:
 
 - Controladores REST
+- DTOs
+- AutoMapper entre DTOs y modelos de Application
 - Configuración de inyección de dependencias
 - CORS
+- Global Exception Handler
 - OpenAPI
 - Swagger UI
 
@@ -186,6 +220,39 @@ Se han creado e integrado tres Web Components:
 <medico-resumen></medico-resumen>
 <cita-resumen></cita-resumen>
 ```
+
+---
+
+## AutoMapper
+
+AutoMapper se utiliza en dos puntos diferentes.
+
+- API
+
+Transformación entre: DTO ↔ Application Model mediante: ApiMappingProfile
+
+- Application
+
+Transformación entre: Application Model ↔ Domain Entity mediante: MappingProfile
+
+Esto permite mantener separadas las representaciones utilizadas por cada capa.
+
+---
+
+## Manejo global de errores
+
+La API utiliza un GlobalExceptionHandler basado en IExceptionHandler.
+
+Permite transformar excepciones de aplicación en respuestas HTTP mediante ProblemDetails.
+
+Ejemplos:
+
+InvalidOperationException → 400 Bad Request
+KeyNotFoundException      → 404 Not Found
+Otros errores             → 500 Internal Server Error
+
+Esto evita repetir bloques try/catch en cada Controller y centraliza el tratamiento de errores.
+
 
 ---
 
@@ -357,6 +424,142 @@ DELETE /api/diagnosticos/{id}
 
 ## Testing
 
+El proyecto utiliza diferentes niveles de pruebas.
+
+### Tests unitarios del backend
+
+Ubicación: backend/CitasMedicas.Tests
+
+Tecnologías:
+
+- xUnit
+- Moq
+- AutoMapper
+- Coverlet
+
+Las pruebas unitarias validan los casos de uso de forma aislada.
+
+Se utilizan mocks para sustituir:
+
+- Repositorios.
+- Unit of Work.
+- Dependencias externas.
+
+Se comprueban, entre otros:
+
+- CRUD de Usuarios.
+- CRUD de Pacientes.
+- CRUD de Médicos.
+- CRUD de Citas.
+- CRUD de Diagnósticos.
+- Recursos inexistentes.
+- Validación de relaciones.
+- Transacciones.
+- Rollback.
+- Conservación de contraseñas.
+- Restricciones entre Usuario, Paciente y Médico.
+- Mapeos de AutoMapper.
+
+Ejecutar:
+
+```powershell
+cd backend
+dotnet test .\CitasMedicas.Tests\CitasMedicas.Tests.csproj
+```
+
+Cobertura:
+```powershell
+dotnet test .\CitasMedicas.Tests\CitasMedicas.Tests.csproj --collect:"XPlat Code Coverage"
+```
+
+### Tests de integración del backend
+
+Ubicación: backend/CitasMedicas.IntegrationTests
+
+Tecnologías:
+
+- xUnit
+- Microsoft.AspNetCore.Mvc.Testing
+- WebApplicationFactory
+- HttpClient
+- Entity Framework Core
+- SQL Server Express
+
+Los tests de integración comprueban el funcionamiento conjunto de:
+
+HTTP
+↓
+Controller
+↓
+AutoMapper
+↓
+UseCase
+↓
+Repository / UnitOfWork
+↓
+Entity Framework Core
+↓
+SQL Server
+
+Para evitar modificar la base de datos de desarrollo, utilizan una base independiente: CitasMedicasTestDb
+
+Antes de cada test se reinicia la base mediante:
+
+EnsureDeletedAsync();
+EnsureCreatedAsync();
+
+Actualmente se comprueban escenarios como:
+
+- GET de pacientes.
+- Recurso inexistente → 404.
+- Creación de paciente → 201.
+- La contraseña no se devuelve en la respuesta.
+- Actualización conservando la contraseña anterior.
+- Eliminación de paciente.
+- Creación de cita válida.
+- Cita con paciente inexistente → 400.
+- Funcionamiento del GlobalExceptionHandler.
+- Restricción de eliminar un paciente desde Usuarios.
+- Persistencia de la relación Paciente-Médico.
+
+Ejecutar únicamente integración:
+
+```powershell
+cd backend
+dotnet test .\CitasMedicas.IntegrationTests\CitasMedicas.IntegrationTests.csproj
+```
+
+
+Ejecutar todos los tests del backend:
+
+```powershell
+cd backend
+dotnet test
+```
+
+
+Cobertura de integración:
+```powershell
+dotnet test .\CitasMedicas.IntegrationTests\CitasMedicas.IntegrationTests.csproj --collect:"XPlat Code Coverage"
+Generar informe HTML de cobertura
+```
+
+
+Ejemplo para integración:
+```powershell
+reportgenerator `
+-reports:"CitasMedicas.IntegrationTests\TestResults\**\coverage.cobertura.xml" `
+-targetdir:"CitasMedicas.IntegrationTests\CoverageReport" `
+-reporttypes:Html
+```
+
+
+Abrir: backend/CitasMedicas.IntegrationTests/CoverageReport/index.html
+
+Las carpetas de resultados y cobertura no se versionan en Git.
+
+
+
 ### Pruebas unitarias con Vitest
 
 Desde `frontend`:
@@ -433,6 +636,7 @@ cd backend
 dotnet clean
 dotnet restore
 dotnet build
+dotnet test
 ```
 
 ### Frontend
@@ -476,11 +680,15 @@ La propiedad `Clave` forma parte del modelo del ejercicio. Este proyecto no debe
 
 - Se utilizan DTOs para separar las entidades de dominio de los datos expuestos por la API.
 - La propiedad `Clave` no se devuelve en los DTOs de lectura.
+- AutoMapper realiza las conversiones entre DTOs, modelos de aplicación y entidades.
+- La lógica de negocio se organiza mediante UseCases.
+- Cada UseCase tiene una responsabilidad concreta.
 - Repository y Unit of Work encapsulan el acceso a datos.
 - Las operaciones que modifican entidades y relaciones utilizan transacciones cuando es necesario.
 - `Paciente` y `Medico` disponen de sus propias operaciones, aunque ambos heredan de `Usuario`.
 - El diagnóstico se mantiene opcional en una cita para permitir crear la cita antes de que exista una valoración médica.
-
+- Los errores HTTP se gestionan de forma centralizada mediante GlobalExceptionHandler.
+- Los tests de integración utilizan una base SQL Server exclusiva para evitar modificar los datos de desarrollo.
 ---
 
 ## Autor
