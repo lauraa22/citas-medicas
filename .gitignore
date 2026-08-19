@@ -30,6 +30,15 @@ yarn-error.log*
 **/obj/
 .vs/
 
+# Test results
+**/TestResults/
+
+# Coverage reports
+**/CoverageReport/
+**/coverage.cobertura.xml
+
+
+
 # =========================
 # IDEs and editors
 # =========================

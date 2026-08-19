@@ -3,4 +3,5 @@
   <Project Path="CitasMedicas.Application/CitasMedicas.Application.csproj" />
   <Project Path="CitasMedicas.Domain/CitasMedicas.Domain.csproj" />
   <Project Path="CitasMedicas.Infrastructure/CitasMedicas.Infrastructure.csproj" />
+  <Project Path="CitasMedicas.Tests/CitasMedicas.Tests.csproj" />
 </Solution>
